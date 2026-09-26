@@ -216,9 +216,13 @@
             <i data-lucide="zap"></i>
             <span>Trades ao Vivo</span>
           </button>
+          <button class="side-tab" data-tab="whales" id="tabWhales">
+            <i data-lucide="activity"></i>
+            <span>🐋 Baleias ETH</span>
+          </button>
           <button class="side-tab" data-tab="analytics" id="tabAnalytics">
             <i data-lucide="bar-chart-2"></i>
-            <span>Métricas & Flask</span>
+            <span>Métricas & API</span>
           </button>
         </div>
 
@@ -260,6 +264,15 @@
 
         <!-- TAB CONTENT 2: LIVE TRADES -->
         <div class="tab-pane" id="paneTrades">
+          <!-- Whale Filter Bar -->
+          <div class="trades-filter-bar">
+            <label class="whale-filter-toggle">
+              <input type="checkbox" id="toggleWhalesOnly">
+              <span>Filtrar Apenas Baleias (≥ 10 ETH)</span>
+            </label>
+            <span class="whale-count-badge" id="whaleTradesCount">0 ordens</span>
+          </div>
+
           <div class="trades-header">
             <span>Preço</span>
             <span>Tamanho</span>
@@ -267,6 +280,94 @@
           </div>
           <div class="trades-list" id="tradesList">
             <!-- Dynamic Live Trades -->
+          </div>
+        </div>
+
+        <!-- TAB CONTENT 3: WHALES & TOP 50 ETH HOLDERS (ETHERSCAN) -->
+        <div class="tab-pane" id="paneWhales">
+          <!-- Sub-navigation: Top 50 vs Live Whale Orders -->
+          <div class="whale-subnav">
+            <button class="whale-subbtn active" data-subview="holders" id="subviewHolders">
+              🏆 Top 50 Baleias ETH
+            </button>
+            <button class="whale-subbtn" data-subview="orders" id="subviewOrders">
+              ⚡ Ordens Baleias (Live)
+            </button>
+          </div>
+
+          <!-- SUBVIEW 1: TOP 50 ETH HOLDERS -->
+          <div class="whale-subcontent active" id="contentWhaleHolders">
+            <!-- Etherscan Rate Limit & Protection Card -->
+            <div class="etherscan-status-card">
+              <div class="status-card-header">
+                <span class="status-card-title"><i data-lucide="shield-check"></i> Etherscan V2 API (Free Plan)</span>
+                <button class="btn-refresh-whales" id="btnRefreshWhales" title="Atualizar dados (Usa cache se < 5 min)">
+                  <i data-lucide="refresh-cw"></i> Atualizar
+                </button>
+              </div>
+              <div class="status-metrics">
+                <div class="metric-pill">
+                  <span>Limite Diário:</span>
+                  <strong class="font-mono">100.000 / dia</strong>
+                </div>
+                <div class="metric-pill">
+                  <span>Chamadas Hoje:</span>
+                  <strong class="font-mono green" id="etherscanCallsUsed">3</strong>
+                </div>
+                <div class="metric-pill">
+                  <span>Taxa Máxima:</span>
+                  <strong class="font-mono">3 req / seg</strong>
+                </div>
+                <div class="metric-pill">
+                  <span>Proteção Cache:</span>
+                  <span class="badge green" id="whaleCacheBadge">Ativo (5 min)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter & Search Controls -->
+            <div class="whale-controls">
+              <input type="text" id="whaleSearchInput" class="whale-search-box" placeholder="Buscar por nome, tag ou 0x..." />
+              <div class="whale-category-filters" id="whaleCategoryFilters">
+                <button class="cat-pill active" data-cat="all">Todos (50)</button>
+                <button class="cat-pill" data-cat="Exchange">Exchanges</button>
+                <button class="cat-pill" data-cat="Staking">Staking</button>
+                <button class="cat-pill" data-cat="DeFi">DeFi</button>
+                <button class="cat-pill" data-cat="Bridge">Bridges</button>
+                <button class="cat-pill" data-cat="Whale">Baleias</button>
+              </div>
+            </div>
+
+            <!-- Top 50 Whales Cards Container -->
+            <div class="whales-cards-list" id="whalesCardsList">
+              <div class="whales-loading">
+                <div class="spinner"></div>
+                <span>Consultando Etherscan em lote seguro...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBVIEW 2: REAL-TIME WHALE ORDERS (BINANCE STREAM) -->
+          <div class="whale-subcontent" id="contentWhaleOrders" style="display: none;">
+            <div class="whale-orders-banner">
+              <div class="banner-title">
+                <span>Rastreador de Grandes Ordens</span>
+                <span class="badge green font-mono" id="whaleSessionTotal">Total: $0.00</span>
+              </div>
+              <p class="banner-desc">Captura instantânea de compras e vendas na Binance com volume ≥ <strong>10 ETH</strong> (~$27k+).</p>
+            </div>
+
+            <div class="whale-orders-header">
+              <span>Tipo / Preço</span>
+              <span>Volume ETH</span>
+              <span>Total USD / Hora</span>
+            </div>
+
+            <div class="whale-orders-feed" id="whaleOrdersFeed">
+              <div class="whale-empty-state">
+                <span>🐋 Aguardando ordens de baleias no mercado...</span>
+              </div>
+            </div>
           </div>
         </div>
 
