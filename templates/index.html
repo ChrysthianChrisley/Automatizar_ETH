@@ -127,27 +127,42 @@
       <section class="chart-section">
         <!-- Chart Controls Toolbar -->
         <div class="chart-toolbar">
-          <div class="toolbar-group">
-            <span class="toolbar-label">Intervalo:</span>
-            <div class="interval-selector" id="intervalSelector">
-              <button class="interval-btn" data-interval="1m" id="int-1m">1m</button>
-              <button class="interval-btn" data-interval="5m" id="int-5m">5m</button>
-              <button class="interval-btn active" data-interval="15m" id="int-15m">15m</button>
-              <button class="interval-btn" data-interval="1h" id="int-1h">1h</button>
-              <button class="interval-btn" data-interval="4h" id="int-4h">4h</button>
-              <button class="interval-btn" data-interval="1d" id="int-1d">1D</button>
-              <button class="interval-btn" data-interval="1w" id="int-1w">1S</button>
-            </div>
+          <!-- View Switcher: Chart vs Expanded Live Trades (Tape Reading) -->
+          <div class="view-mode-tabs" id="viewModeTabs">
+            <button class="view-tab-btn active" data-view="chart" id="btnViewChart">
+              <i data-lucide="line-chart"></i> <span>Gráfico</span>
+            </button>
+            <button class="view-tab-btn" data-view="tape" id="btnViewTape">
+              <i data-lucide="zap"></i> <span>Tape Reading Expandido</span>
+            </button>
           </div>
 
           <div class="toolbar-separator"></div>
 
-          <div class="toolbar-group">
-            <span class="toolbar-label">Indicadores:</span>
-            <button class="toggle-pill active" id="toggleEma20">EMA 20</button>
-            <button class="toggle-pill active" id="toggleEma50">EMA 50</button>
-            <button class="toggle-pill" id="toggleRsi">RSI (14)</button>
-            <button class="toggle-pill" id="toggleBands">Bollinger</button>
+          <!-- Chart Interval Controls (visible in chart mode) -->
+          <div class="chart-controls-group" id="chartControlsGroup">
+            <div class="toolbar-group">
+              <span class="toolbar-label">Intervalo:</span>
+              <div class="interval-selector" id="intervalSelector">
+                <button class="interval-btn" data-interval="1m" id="int-1m">1m</button>
+                <button class="interval-btn" data-interval="5m" id="int-5m">5m</button>
+                <button class="interval-btn active" data-interval="15m" id="int-15m">15m</button>
+                <button class="interval-btn" data-interval="1h" id="int-1h">1h</button>
+                <button class="interval-btn" data-interval="4h" id="int-4h">4h</button>
+                <button class="interval-btn" data-interval="1d" id="int-1d">1D</button>
+                <button class="interval-btn" data-interval="1w" id="int-1w">1S</button>
+              </div>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-group">
+              <span class="toolbar-label">Indicadores:</span>
+              <button class="toggle-pill active" id="toggleEma20">EMA 20</button>
+              <button class="toggle-pill active" id="toggleEma50">EMA 50</button>
+              <button class="toggle-pill" id="toggleRsi">RSI (14)</button>
+              <button class="toggle-pill" id="toggleBands">Bollinger</button>
+            </div>
           </div>
 
           <div class="toolbar-group" style="margin-left: auto;">
@@ -159,48 +174,147 @@
           </div>
         </div>
 
-        <!-- TradingView Chart Container -->
-        <div class="chart-wrapper" id="tvChartContainer">
-          <div class="chart-loading-overlay" id="chartLoader">
-            <div class="spinner"></div>
-            <span>Carregando dados históricos da Binance...</span>
+        <!-- VIEW 1: TRADINGVIEW CHART CONTAINER -->
+        <div class="main-subview active" id="chartMainView">
+          <div class="chart-wrapper" id="tvChartContainer">
+            <div class="chart-loading-overlay" id="chartLoader">
+              <div class="spinner"></div>
+              <span>Carregando dados históricos da Binance...</span>
+            </div>
+          </div>
+
+          <!-- RSI Sub-chart Container (Toggleable) -->
+          <div class="rsi-chart-wrapper" id="rsiChartContainer" style="display: none;">
+            <div class="rsi-chart-header">
+              <span>Relative Strength Index (RSI 14)</span>
+              <span class="rsi-current-val" id="rsiSubVal">50.0</span>
+            </div>
+            <div id="tvRsiContainer" style="height: 120px; width: 100%;"></div>
+          </div>
+
+          <!-- Historical Summary Bar -->
+          <div class="chart-footer-stats">
+            <div class="stat-pill">
+              <span class="stat-name">Total Candles:</span>
+              <span class="stat-val font-mono" id="statCandlesCount">500</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-name">Abertura:</span>
+              <span class="stat-val font-mono" id="statOpen">---</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-name">Máxima:</span>
+              <span class="stat-val font-mono green" id="statHigh">---</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-name">Mínima:</span>
+              <span class="stat-val font-mono red" id="statLow">---</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-name">Fechamento:</span>
+              <span class="stat-val font-mono" id="statClose">---</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-name">Última Atualização:</span>
+              <span class="stat-val font-mono" id="statLastUpdate">---</span>
+            </div>
           </div>
         </div>
 
-        <!-- RSI Sub-chart Container (Toggleable) -->
-        <div class="rsi-chart-wrapper" id="rsiChartContainer" style="display: none;">
-          <div class="rsi-chart-header">
-            <span>Relative Strength Index (RSI 14)</span>
-            <span class="rsi-current-val" id="rsiSubVal">50.0</span>
-          </div>
-          <div id="tvRsiContainer" style="height: 120px; width: 100%;"></div>
-        </div>
+        <!-- VIEW 2: EXPANDED TAPE READING / LIVE TRADES PRO VIEW -->
+        <div class="main-subview" id="tapeReadingMainView" style="display: none;">
+          <!-- Top Order Flow & Aggression Dashboard -->
+          <div class="tape-metrics-dashboard">
+            <div class="tape-metric-box">
+              <span class="tape-metric-label">Pressão Compradora (Taker Buy)</span>
+              <div class="tape-metric-val green font-mono" id="tapeBuyVol">0.00 ETH</div>
+              <span class="tape-metric-sub" id="tapeBuyUsd">$0.00</span>
+            </div>
 
-        <!-- Historical Summary Bar -->
-        <div class="chart-footer-stats">
-          <div class="stat-pill">
-            <span class="stat-name">Total Candles:</span>
-            <span class="stat-val font-mono" id="statCandlesCount">500</span>
+            <div class="tape-metric-box">
+              <span class="tape-metric-label">Pressão Vendedora (Taker Sell)</span>
+              <div class="tape-metric-val red font-mono" id="tapeSellVol">0.00 ETH</div>
+              <span class="tape-metric-sub" id="tapeSellUsd">$0.00</span>
+            </div>
+
+            <div class="tape-metric-box delta-box">
+              <span class="tape-metric-label">Delta Acumulado (Net Pressure)</span>
+              <div class="tape-metric-val font-mono" id="tapeDeltaVol">+0.00 ETH</div>
+              <!-- Aggression Power Gauge Bar -->
+              <div class="aggression-bar-wrapper">
+                <div class="aggression-fill-buy" id="aggressionFillBuy" style="width: 50%;">50%</div>
+                <div class="aggression-fill-sell" id="aggressionFillSell" style="width: 50%;">50%</div>
+              </div>
+            </div>
+
+            <div class="tape-metric-box">
+              <span class="tape-metric-label">Velocidade da Fita</span>
+              <div class="tape-metric-val font-mono" id="tapeSpeed">0 trades/s</div>
+              <span class="tape-metric-sub">Fluxo em tempo real</span>
+            </div>
+
+            <div class="tape-metric-box">
+              <span class="tape-metric-label">Recordes da Sessão</span>
+              <div class="tape-record-item green font-mono" id="tapeMaxBuy">Maior C: ---</div>
+              <div class="tape-record-item red font-mono" id="tapeMaxSell">Maior V: ---</div>
+            </div>
           </div>
-          <div class="stat-pill">
-            <span class="stat-name">Abertura:</span>
-            <span class="stat-val font-mono" id="statOpen">---</span>
+
+          <!-- Controls & Filter Toolbar -->
+          <div class="tape-toolbar">
+            <div class="tape-toolbar-left">
+              <!-- Pause / Resume Button -->
+              <button class="tape-btn tape-pause-btn" id="btnPauseTape">
+                <i data-lucide="pause"></i>
+                <span id="txtPauseTape">Pausar Fluxo</span>
+              </button>
+
+              <div class="toolbar-separator"></div>
+
+              <!-- Size Filter Pills -->
+              <span class="toolbar-label">Porte:</span>
+              <div class="tape-filter-pills" id="tapeSizeFilters">
+                <button class="tape-pill active" data-size="all">Todos</button>
+                <button class="tape-pill" data-size="retail">🦐 Varejo (&lt; 1)</button>
+                <button class="tape-pill" data-size="medium">🐟 Médio (1-5)</button>
+                <button class="tape-pill" data-size="shark">🐬 Tubarão (5-10)</button>
+                <button class="tape-pill" data-size="whale">🐋 Baleia (≥ 10)</button>
+              </div>
+
+              <div class="toolbar-separator"></div>
+
+              <!-- Side Filter Pills -->
+              <span class="toolbar-label">Lado:</span>
+              <div class="tape-filter-pills" id="tapeSideFilters">
+                <button class="tape-pill active" data-side="all">Todos</button>
+                <button class="tape-pill green" data-side="buy">Compras 🟢</button>
+                <button class="tape-pill red" data-side="sell">Vendas 🔴</button>
+              </div>
+            </div>
+
+            <div class="tape-toolbar-right">
+              <button class="tape-btn" id="btnClearTape" title="Limpar fita">
+                <i data-lucide="trash-2"></i> Limpar
+              </button>
+            </div>
           </div>
-          <div class="stat-pill">
-            <span class="stat-name">Máxima:</span>
-            <span class="stat-val font-mono green" id="statHigh">---</span>
+
+          <!-- Expanded Time & Sales Table Header -->
+          <div class="tape-table-header">
+            <span>Horário (ms)</span>
+            <span>Agressão</span>
+            <span>Preço Execução</span>
+            <span>Quantidade</span>
+            <span>Total USD</span>
+            <span>Porte da Ordem</span>
+            <span>Trade ID</span>
           </div>
-          <div class="stat-pill">
-            <span class="stat-name">Mínima:</span>
-            <span class="stat-val font-mono red" id="statLow">---</span>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-name">Fechamento:</span>
-            <span class="stat-val font-mono" id="statClose">---</span>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-name">Última Atualização:</span>
-            <span class="stat-val font-mono" id="statLastUpdate">---</span>
+
+          <!-- Expanded Time & Sales Scrolling Feed -->
+          <div class="tape-table-body" id="tapeTableBody">
+            <div class="tape-empty-msg">
+              <span>⚡ Conectando ao fluxo de negociações em alta velocidade da Binance...</span>
+            </div>
           </div>
         </div>
       </section>

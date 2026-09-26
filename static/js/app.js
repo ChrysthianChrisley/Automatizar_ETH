@@ -93,6 +93,29 @@ const el = {
   contentWhaleHolders: document.getElementById('contentWhaleHolders'),
   contentWhaleOrders: document.getElementById('contentWhaleOrders'),
   obWhaleRadarStatus: document.getElementById('obWhaleRadarStatus'),
+  // Tape Reading / Expanded Live Trades Elements
+  btnViewChart: document.getElementById('btnViewChart'),
+  btnViewTape: document.getElementById('btnViewTape'),
+  chartMainView: document.getElementById('chartMainView'),
+  tapeReadingMainView: document.getElementById('tapeReadingMainView'),
+  chartControlsGroup: document.getElementById('chartControlsGroup'),
+  chartLegend: document.getElementById('chartLegend'),
+  tapeBuyVol: document.getElementById('tapeBuyVol'),
+  tapeBuyUsd: document.getElementById('tapeBuyUsd'),
+  tapeSellVol: document.getElementById('tapeSellVol'),
+  tapeSellUsd: document.getElementById('tapeSellUsd'),
+  tapeDeltaVol: document.getElementById('tapeDeltaVol'),
+  aggressionFillBuy: document.getElementById('aggressionFillBuy'),
+  aggressionFillSell: document.getElementById('aggressionFillSell'),
+  tapeSpeed: document.getElementById('tapeSpeed'),
+  tapeMaxBuy: document.getElementById('tapeMaxBuy'),
+  tapeMaxSell: document.getElementById('tapeMaxSell'),
+  btnPauseTape: document.getElementById('btnPauseTape'),
+  txtPauseTape: document.getElementById('txtPauseTape'),
+  btnClearTape: document.getElementById('btnClearTape'),
+  tapeSizeFilters: document.getElementById('tapeSizeFilters'),
+  tapeSideFilters: document.getElementById('tapeSideFilters'),
+  tapeTableBody: document.getElementById('tapeTableBody'),
 };
 
 // Whale Tracker State
@@ -101,6 +124,26 @@ let currentWhaleCategory = 'all';
 let whaleSearchQuery = '';
 let whaleOrdersCount = 0;
 let whaleOrdersTotalUSD = 0.0;
+
+// Tape Reading / Expanded Live Trades State
+const tapeState = {
+  activeView: 'chart',
+  paused: false,
+  queue: [],
+  recentTrades: [],
+  sizeFilter: 'all',
+  sideFilter: 'all',
+  buyVolume: 0,
+  buyUsd: 0,
+  sellVolume: 0,
+  sellUsd: 0,
+  maxBuyQty: 0,
+  maxBuyPrice: 0,
+  maxSellQty: 0,
+  maxSellPrice: 0,
+  timestamps: [],
+  maxDomRows: 150,
+};
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
@@ -541,6 +584,9 @@ function handleRealtimeTrade(trade) {
     recordWhaleOrder(tradeType, price, qty, time);
   }
 
+  // Process Expanded Tape Reading Pro Feed
+  processTapeReadingTrade(trade);
+
   // Filter if user toggled "Only Whales"
   if (el.toggleWhalesOnly && el.toggleWhalesOnly.checked && !isWhaleTrade) {
     return;
@@ -592,6 +638,318 @@ function recordWhaleOrder(side, price, qty, time) {
       el.whaleOrdersFeed.removeChild(el.whaleOrdersFeed.lastChild);
     }
   }
+}
+
+// ==========================================================================
+// EXPANDED TAPE READING / TIME & SALES PRO ENGINE
+// ==========================================================================
+
+function setMainView(view) {
+  tapeState.activeView = view;
+  if (view === 'chart') {
+    if (el.btnViewChart) el.btnViewChart.classList.add('active');
+    if (el.btnViewTape) el.btnViewTape.classList.remove('active');
+    if (el.chartMainView) {
+      el.chartMainView.style.display = 'flex';
+      el.chartMainView.classList.add('active');
+    }
+    if (el.tapeReadingMainView) {
+      el.tapeReadingMainView.style.display = 'none';
+      el.tapeReadingMainView.classList.remove('active');
+    }
+    if (el.chartControlsGroup) el.chartControlsGroup.style.display = 'flex';
+    if (el.chartLegend) el.chartLegend.style.display = 'flex';
+
+    // Resize TradingView chart if dimensions changed
+    if (tvChart && el.tvChartContainer) {
+      tvChart.applyOptions({
+        width: el.tvChartContainer.clientWidth,
+        height: el.tvChartContainer.clientHeight,
+      });
+    }
+  } else {
+    if (el.btnViewTape) el.btnViewTape.classList.add('active');
+    if (el.btnViewChart) el.btnViewChart.classList.remove('active');
+    if (el.chartMainView) {
+      el.chartMainView.style.display = 'none';
+      el.chartMainView.classList.remove('active');
+    }
+    if (el.tapeReadingMainView) {
+      el.tapeReadingMainView.style.display = 'flex';
+      el.tapeReadingMainView.classList.add('active');
+    }
+    if (el.chartControlsGroup) el.chartControlsGroup.style.display = 'none';
+    if (el.chartLegend) el.chartLegend.style.display = 'none';
+  }
+}
+
+function getTradeTier(qty, price, symbol) {
+  const isEth = symbol.startsWith('ETH');
+  const usdValue = qty * price;
+
+  if ((isEth && qty >= 10.0) || (!isEth && qty >= 0.5) || usdValue >= 25000.0) {
+    const isMega = usdValue >= 100000.0 || (isEth && qty >= 50.0);
+    return {
+      id: 'whale',
+      label: isMega ? '🐋 MEGA BALEIA' : '🐋 BALEIA',
+      cssClass: isMega ? 'mega-whale' : 'whale',
+      isWhale: true,
+      isMegaWhale: isMega,
+    };
+  }
+  if ((isEth && qty >= 5.0) || (!isEth && qty >= 0.25) || usdValue >= 12000.0) {
+    return { id: 'shark', label: '🐬 TUBARÃO', cssClass: 'shark', isWhale: false, isMegaWhale: false };
+  }
+  if ((isEth && qty >= 1.0) || (!isEth && qty >= 0.05) || usdValue >= 2500.0) {
+    return { id: 'medium', label: '🐟 MÉDIO', cssClass: 'medium', isWhale: false, isMegaWhale: false };
+  }
+  return { id: 'retail', label: '🦐 VAREJO', cssClass: 'retail', isWhale: false, isMegaWhale: false };
+}
+
+function processTapeReadingTrade(trade) {
+  const price = parseFloat(trade.p);
+  const qty = parseFloat(trade.q);
+  const timeMs = trade.T || Date.now();
+  const tradeId = trade.t || trade.a || Math.floor(Math.random() * 1000000);
+  const isBuyerMaker = trade.m; // true = taker sell, false = taker buy
+  const side = isBuyerMaker ? 'sell' : 'buy';
+  const totalUSD = price * qty;
+  const tier = getTradeTier(qty, price, currentSymbol);
+
+  // Format millisecond time (HH:MM:SS.mmm)
+  const dateObj = new Date(timeMs);
+  const timeFormatted = dateObj.toTimeString().slice(0, 8) + '.' + String(dateObj.getMilliseconds()).padStart(3, '0');
+
+  // 1. Update Aggression & Tape Metrics
+  if (side === 'buy') {
+    tapeState.buyVolume += qty;
+    tapeState.buyUsd += totalUSD;
+    if (qty > tapeState.maxBuyQty) {
+      tapeState.maxBuyQty = qty;
+      tapeState.maxBuyPrice = price;
+    }
+  } else {
+    tapeState.sellVolume += qty;
+    tapeState.sellUsd += totalUSD;
+    if (qty > tapeState.maxSellQty) {
+      tapeState.maxSellQty = qty;
+      tapeState.maxSellPrice = price;
+    }
+  }
+
+  // 2. Speed calculation (rolling window of 3 seconds)
+  const now = Date.now();
+  tapeState.timestamps.push(now);
+  const cutoff = now - 3000;
+  while (tapeState.timestamps.length > 0 && tapeState.timestamps[0] < cutoff) {
+    tapeState.timestamps.shift();
+  }
+  const currentSpeed = (tapeState.timestamps.length / 3).toFixed(1);
+
+  // 3. Update Dashboard DOM
+  updateTapeDashboardUI(currentSpeed);
+
+  // 4. Construct Item
+  const tradeItem = {
+    id: tradeId,
+    timeFormatted,
+    timeMs,
+    side,
+    price,
+    qty,
+    totalUSD,
+    tier,
+    symbol: currentSymbol,
+  };
+
+  tapeState.recentTrades.unshift(tradeItem);
+  if (tapeState.recentTrades.length > 250) {
+    tapeState.recentTrades.pop();
+  }
+
+  // 5. Handle Pause / Render
+  if (tapeState.paused) {
+    tapeState.queue.push(tradeItem);
+    if (el.txtPauseTape) {
+      el.txtPauseTape.textContent = `Pausado (${tapeState.queue.length} novos)`;
+    }
+    return;
+  }
+
+  // Render to DOM if matches current filters
+  if (matchesTapeFilter(tradeItem)) {
+    renderTapeRow(tradeItem, true);
+  }
+}
+
+function updateTapeDashboardUI(speed) {
+  const baseAsset = currentSymbol.slice(0, 3);
+  const buyVol = tapeState.buyVolume;
+  const sellVol = tapeState.sellVolume;
+  const totalVol = buyVol + sellVol;
+  const delta = buyVol - sellVol;
+  const buyRatio = totalVol > 0 ? (buyVol / totalVol) * 100 : 50;
+  const sellRatio = totalVol > 0 ? (sellVol / totalVol) * 100 : 50;
+
+  if (el.tapeBuyVol) el.tapeBuyVol.textContent = `${buyVol.toFixed(2)} ${baseAsset}`;
+  if (el.tapeBuyUsd) el.tapeBuyUsd.textContent = `$${formatCompactNumber(tapeState.buyUsd)}`;
+  if (el.tapeSellVol) el.tapeSellVol.textContent = `${sellVol.toFixed(2)} ${baseAsset}`;
+  if (el.tapeSellUsd) el.tapeSellUsd.textContent = `$${formatCompactNumber(tapeState.sellUsd)}`;
+
+  if (el.tapeDeltaVol) {
+    const prefix = delta >= 0 ? '+' : '';
+    el.tapeDeltaVol.textContent = `${prefix}${delta.toFixed(2)} ${baseAsset}`;
+    el.tapeDeltaVol.className = `tape-metric-val font-mono ${delta >= 0 ? 'green' : 'red'}`;
+  }
+
+  if (el.aggressionFillBuy && el.aggressionFillSell) {
+    el.aggressionFillBuy.style.width = `${buyRatio.toFixed(1)}%`;
+    el.aggressionFillBuy.textContent = buyRatio > 15 ? `${buyRatio.toFixed(0)}%` : '';
+    el.aggressionFillSell.style.width = `${sellRatio.toFixed(1)}%`;
+    el.aggressionFillSell.textContent = sellRatio > 15 ? `${sellRatio.toFixed(0)}%` : '';
+  }
+
+  if (el.tapeSpeed) {
+    el.tapeSpeed.textContent = `${speed} trades/s`;
+  }
+
+  if (el.tapeMaxBuy) {
+    el.tapeMaxBuy.textContent = tapeState.maxBuyQty > 0
+      ? `Maior C: ${tapeState.maxBuyQty.toFixed(2)} @ $${formatPrice(tapeState.maxBuyPrice)}`
+      : 'Maior C: ---';
+  }
+  if (el.tapeMaxSell) {
+    el.tapeMaxSell.textContent = tapeState.maxSellQty > 0
+      ? `Maior V: ${tapeState.maxSellQty.toFixed(2)} @ $${formatPrice(tapeState.maxSellPrice)}`
+      : 'Maior V: ---';
+  }
+}
+
+function matchesTapeFilter(trade) {
+  // Side Filter
+  if (tapeState.sideFilter !== 'all' && trade.side !== tapeState.sideFilter) {
+    return false;
+  }
+  // Size Filter
+  if (tapeState.sizeFilter !== 'all' && trade.tier.id !== tapeState.sizeFilter) {
+    return false;
+  }
+  return true;
+}
+
+function renderTapeRow(trade, prepend = true) {
+  if (!el.tapeTableBody) return;
+
+  const emptyMsg = el.tapeTableBody.querySelector('.tape-empty-msg');
+  if (emptyMsg) emptyMsg.remove();
+
+  const row = document.createElement('div');
+  const isMega = trade.tier.isMegaWhale;
+  const isWhale = trade.tier.isWhale;
+  const rowClass = `tape-row ${trade.side} ${isMega ? 'mega-whale-row' : isWhale ? 'whale-row' : ''}`;
+  row.className = rowClass;
+
+  const sideTag = trade.side === 'buy'
+    ? `<span class="tape-tag-buy">🟢 COMPRA</span>`
+    : `<span class="tape-tag-sell">🔴 VENDA</span>`;
+
+  row.innerHTML = `
+    <span>${trade.timeFormatted}</span>
+    <span>${sideTag}</span>
+    <span>${formatPrice(trade.price)}</span>
+    <span>${trade.qty.toFixed(4)}</span>
+    <span>$${formatCompactNumber(trade.totalUSD)}</span>
+    <span><span class="tier-badge ${trade.tier.cssClass}">${trade.tier.label}</span></span>
+    <span>#${trade.id}</span>
+  `;
+
+  if (prepend) {
+    el.tapeTableBody.prepend(row);
+    if (el.tapeTableBody.children.length > tapeState.maxDomRows) {
+      el.tapeTableBody.removeChild(el.tapeTableBody.lastChild);
+    }
+  } else {
+    el.tapeTableBody.appendChild(row);
+  }
+}
+
+function renderFilteredTapeList() {
+  if (!el.tapeTableBody) return;
+  el.tapeTableBody.innerHTML = '';
+
+  const filtered = tapeState.recentTrades.filter(matchesTapeFilter);
+  if (filtered.length === 0) {
+    el.tapeTableBody.innerHTML = `
+      <div class="tape-empty-msg">
+        <span>Nenhuma negociação recente corresponde aos filtros selecionados.</span>
+      </div>
+    `;
+    return;
+  }
+
+  filtered.slice(0, tapeState.maxDomRows).forEach(trade => {
+    renderTapeRow(trade, false);
+  });
+}
+
+function togglePauseTape() {
+  tapeState.paused = !tapeState.paused;
+  if (el.btnPauseTape) {
+    el.btnPauseTape.classList.toggle('paused', tapeState.paused);
+  }
+  if (tapeState.paused) {
+    if (el.btnPauseTape) {
+      el.btnPauseTape.innerHTML = `<i data-lucide="play"></i> <span id="txtPauseTape">Retomar Fluxo</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  } else {
+    if (el.btnPauseTape) {
+      el.btnPauseTape.innerHTML = `<i data-lucide="pause"></i> <span id="txtPauseTape">Pausar Fluxo</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
+    // Flush buffered queue
+    tapeState.queue = [];
+    renderFilteredTapeList();
+  }
+}
+
+function clearTape() {
+  tapeState.recentTrades = [];
+  tapeState.queue = [];
+  tapeState.buyVolume = 0;
+  tapeState.buyUsd = 0;
+  tapeState.sellVolume = 0;
+  tapeState.sellUsd = 0;
+  tapeState.maxBuyQty = 0;
+  tapeState.maxBuyPrice = 0;
+  tapeState.maxSellQty = 0;
+  tapeState.maxSellPrice = 0;
+  tapeState.timestamps = [];
+
+  if (el.tapeTableBody) {
+    el.tapeTableBody.innerHTML = `
+      <div class="tape-empty-msg">
+        <span>⚡ Fita limpa. Aguardando novas execuções da Binance...</span>
+      </div>
+    `;
+  }
+  updateTapeDashboardUI('0.0');
+}
+
+function resetTapeStats() {
+  clearTape();
+}
+
+function seedTapeFromRest(trades) {
+  trades.forEach(t => {
+    processTapeReadingTrade({
+      p: t.price,
+      q: t.qty,
+      T: t.time,
+      m: t.isBuyerMaker,
+      t: t.id,
+    });
+  });
 }
 
 // Render Order Book Depth (Top 15 Asks & Bids) with Whale Wall Detection
@@ -747,6 +1105,11 @@ function renderTrades(trades) {
     `;
     el.tradesList.appendChild(row);
   });
+
+  // Seed Tape Reading with initial REST trades if empty
+  if (tapeState.recentTrades.length === 0 && trades.length > 0) {
+    seedTapeFromRest(trades);
+  }
 }
 
 // Render 24h Ticker Stats
@@ -815,6 +1178,7 @@ function setupEventListeners() {
     btn.classList.add('active');
 
     currentSymbol = btn.dataset.symbol;
+    resetTapeStats();
     loadSymbolData(currentSymbol, currentInterval);
   });
 
@@ -934,6 +1298,46 @@ function setupEventListeners() {
 
   // Export CSV Button
   document.getElementById('btnExportCSV').addEventListener('click', exportToCSV);
+
+  // View Switcher (Chart vs Expanded Live Tape)
+  if (el.btnViewChart && el.btnViewTape) {
+    el.btnViewChart.addEventListener('click', () => setMainView('chart'));
+    el.btnViewTape.addEventListener('click', () => setMainView('tape'));
+  }
+
+  // Pause / Resume Tape
+  if (el.btnPauseTape) {
+    el.btnPauseTape.addEventListener('click', togglePauseTape);
+  }
+
+  // Clear Tape
+  if (el.btnClearTape) {
+    el.btnClearTape.addEventListener('click', clearTape);
+  }
+
+  // Tape Size Filters
+  if (el.tapeSizeFilters) {
+    el.tapeSizeFilters.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tape-pill');
+      if (!btn) return;
+      el.tapeSizeFilters.querySelectorAll('.tape-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tapeState.sizeFilter = btn.dataset.size;
+      renderFilteredTapeList();
+    });
+  }
+
+  // Tape Side Filters
+  if (el.tapeSideFilters) {
+    el.tapeSideFilters.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tape-pill');
+      if (!btn) return;
+      el.tapeSideFilters.querySelectorAll('.tape-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tapeState.sideFilter = btn.dataset.side;
+      renderFilteredTapeList();
+    });
+  }
 }
 
 // 6. CSV EXPORT UTILITY
