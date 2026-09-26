@@ -214,7 +214,7 @@ function setupEventListeners() {
     });
   }
 
-  // Side Panel Tabs (Orderbook, Trades, Whales, Analytics)
+  // Side Panel Tabs (Orderbook, Trades, Whales, Metrics, API)
   const sideTabs = document.querySelectorAll('.side-tab');
   sideTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -225,12 +225,19 @@ function setupEventListeners() {
       const paneId = tab.dataset.tab === 'orderbook' ? 'paneOrderBook'
         : tab.dataset.tab === 'trades' ? 'paneTrades'
         : tab.dataset.tab === 'whales' ? 'paneWhales'
-        : 'paneAnalytics';
+        : tab.dataset.tab === 'metrics' ? 'paneMetrics'
+        : 'paneAPI';
       const targetPane = document.getElementById(paneId);
       if (targetPane) targetPane.classList.add('active');
 
       if (tab.dataset.tab === 'whales' && rawWhalesData.length === 0) {
         loadWhalesData();
+      }
+      if (tab.dataset.tab === 'metrics') {
+        updateMetricsPanel();
+      }
+      if (tab.dataset.tab === 'api') {
+        updateApiPanel();
       }
     });
   });
@@ -339,3 +346,45 @@ function setupEventListeners() {
     });
   }
 }
+
+// Update Dedicated Metrics Tab
+function updateMetricsPanel() {
+  const rsiVal = parseFloat(el.valRsi ? el.valRsi.textContent : '50') || 50;
+  const needle = document.getElementById('cardRsiNeedle');
+  if (needle) {
+    needle.style.left = `${Math.min(100, Math.max(0, rsiVal))}%`;
+  }
+
+  const metricHigh24 = document.getElementById('metricHigh24');
+  const metricLow24 = document.getElementById('metricLow24');
+  const metricVolBase24 = document.getElementById('metricVolBase24');
+  const metricVolQuote24 = document.getElementById('metricVolQuote24');
+
+  if (metricHigh24 && el.high24h) metricHigh24.textContent = el.high24h.textContent;
+  if (metricLow24 && el.low24h) metricLow24.textContent = el.low24h.textContent;
+  if (metricVolBase24 && el.volBase24h) metricVolBase24.textContent = el.volBase24h.textContent + ' ' + (currentSymbol.slice(0, 3));
+  if (metricVolQuote24 && el.volQuote24h) metricVolQuote24.textContent = el.volQuote24h.textContent;
+}
+
+// Update Dedicated API & Quotas Tab
+function updateApiPanel() {
+  const apiRestLatency = document.getElementById('apiRestLatency');
+  if (apiRestLatency && el.footerPing) {
+    apiRestLatency.textContent = el.footerPing.textContent.replace('Latência:', '').trim();
+  }
+
+  const apiWsBadge = document.getElementById('apiWsBadge');
+  if (apiWsBadge && el.wsStatusText) {
+    const isConn = el.wsStatusText.textContent.includes('Conectado');
+    apiWsBadge.className = `badge ${isConn ? 'green' : 'red'}`;
+    apiWsBadge.textContent = isConn ? '🟢 Conectado' : '🔴 Desconectado';
+  }
+
+  const callsUsed = parseInt(el.etherscanCallsUsed ? el.etherscanCallsUsed.textContent : '3', 10) || 3;
+  const quotaFill = document.getElementById('etherscanQuotaFill');
+  if (quotaFill) {
+    const pct = Math.max(1, Math.min(100, (callsUsed / 100000) * 100));
+    quotaFill.style.width = `${pct}%`;
+  }
+}
+

@@ -237,13 +237,20 @@ function updateIndicatorsData() {
   // RSI 14
   const rsiValues = calculateRSI(closes, 14);
   const currentRsi = rsiValues[rsiValues.length - 1] || 50;
-  el.valRsi.textContent = currentRsi.toFixed(1);
-  el.cardRsi.textContent = currentRsi.toFixed(1);
-  if (currentRsi >= 70) {
-    el.cardRsi.className = 'font-mono font-bold red';
-  } else if (currentRsi <= 30) {
-    el.cardRsi.className = 'font-mono font-bold green';
-  } else {
-    el.cardRsi.className = 'font-mono font-bold';
+  if (el.valRsi) el.valRsi.textContent = currentRsi.toFixed(1);
+  if (el.cardRsi) {
+    el.cardRsi.textContent = currentRsi.toFixed(1);
+    if (currentRsi >= 70) {
+      el.cardRsi.className = 'font-mono font-bold red';
+    } else if (currentRsi <= 30) {
+      el.cardRsi.className = 'font-mono font-bold green';
+    } else {
+      el.cardRsi.className = 'font-mono font-bold';
+    }
+  }
+
+  const needle = document.getElementById('cardRsiNeedle');
+  if (needle) {
+    needle.style.left = `${Math.min(100, Math.max(0, currentRsi))}%`;
   }
 }

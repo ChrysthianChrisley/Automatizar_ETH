@@ -365,7 +365,7 @@ body {
 /* 3. MAIN WORKSPACE (SPLIT LAYOUT) */
 .terminal-workspace {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr 390px;
   flex: 1;
   overflow: hidden;
   position: relative;
@@ -583,28 +583,31 @@ body {
 }
 
 .side-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-card);
   flex-shrink: 0;
 }
 
 .side-tab {
-  flex: 1;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 600;
-  padding: 10px 8px;
+  padding: 8px 2px;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 3px;
   transition: var(--transition);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .side-tab:hover {
@@ -615,7 +618,7 @@ body {
 .side-tab.active {
   color: var(--binance-yellow);
   border-bottom-color: var(--binance-yellow);
-  background: rgba(240, 185, 11, 0.05);
+  background: rgba(240, 185, 11, 0.06);
 }
 
 .side-tab i {
@@ -1220,10 +1223,10 @@ body {
 .whales-cards-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .whales-loading {
@@ -1241,19 +1244,21 @@ body {
   background: var(--bg-main);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 9px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   transition: var(--transition);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  flex-shrink: 0 !important;
+  min-height: 80px;
 }
 
 .whale-card:hover {
   border-color: rgba(240, 185, 11, 0.4);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .whale-card.rank-1 {
@@ -1909,5 +1914,141 @@ body {
   color: var(--text-muted);
   font-size: 12px;
 }
+
+/* ==========================================================================
+   METRICS & API DEDICATED PANELS
+   ========================================================================== */
+
+.metrics-panel-scroll,
+.api-panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.card-header-flex h4 {
+  margin: 0;
+}
+
+/* RSI Visual Gauge Bar */
+.rsi-gauge-bar {
+  height: 7px;
+  border-radius: 4px;
+  display: flex;
+  width: 100%;
+  position: relative;
+  margin: 10px 0 5px;
+  background: var(--bg-hover);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rsi-zone-oversold {
+  width: 30%;
+  background: var(--green);
+  opacity: 0.7;
+  border-radius: 4px 0 0 4px;
+}
+
+.rsi-zone-neutral {
+  width: 40%;
+  background: #475569;
+  opacity: 0.5;
+}
+
+.rsi-zone-overbought {
+  width: 30%;
+  background: var(--red);
+  opacity: 0.7;
+  border-radius: 0 4px 4px 0;
+}
+
+.rsi-needle {
+  position: absolute;
+  top: -4px;
+  width: 5px;
+  height: 15px;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+  transform: translateX(-50%);
+  transition: left 0.3s ease;
+}
+
+.rsi-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* API Tab Specifics */
+.api-tab-card {
+  margin: 0;
+}
+
+.api-plan-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.api-plan-tag {
+  color: var(--text-secondary);
+}
+
+.api-quota-progress {
+  margin-top: 6px;
+}
+
+.quota-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.quota-bar-track {
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.quota-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--binance-yellow));
+  transition: width 0.3s ease;
+}
+
+.http-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: 6px;
+  font-family: var(--font-mono);
+}
+
+.http-badge.get {
+  background: rgba(14, 203, 129, 0.2);
+  color: var(--green);
+  border: 1px solid rgba(14, 203, 129, 0.35);
+}
+
 
 

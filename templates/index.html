@@ -322,21 +322,25 @@
       <!-- RIGHT: ORDER BOOK & RECENT TRADES SECTION -->
       <aside class="side-panel">
         <div class="side-tabs">
-          <button class="side-tab active" data-tab="orderbook" id="tabOrderBook">
+          <button class="side-tab active" data-tab="orderbook" id="tabOrderBook" title="Livro de Ofertas">
             <i data-lucide="layers"></i>
             <span>Order Book</span>
           </button>
-          <button class="side-tab" data-tab="trades" id="tabTrades">
+          <button class="side-tab" data-tab="trades" id="tabTrades" title="Negociações em Tempo Real">
             <i data-lucide="zap"></i>
             <span>Trades ao Vivo</span>
           </button>
-          <button class="side-tab" data-tab="whales" id="tabWhales">
+          <button class="side-tab" data-tab="whales" id="tabWhales" title="Rastreador de Baleias ETH">
             <i data-lucide="activity"></i>
-            <span>🐋 Baleias ETH</span>
+            <span>Baleias ETH</span>
           </button>
-          <button class="side-tab" data-tab="analytics" id="tabAnalytics">
+          <button class="side-tab" data-tab="metrics" id="tabMetrics" title="Métricas Técnicas e Análise">
             <i data-lucide="bar-chart-2"></i>
-            <span>Métricas & API</span>
+            <span>Métricas</span>
+          </button>
+          <button class="side-tab" data-tab="api" id="tabApi" title="Centro de Controle de APIs e Cotas">
+            <i data-lucide="cpu"></i>
+            <span>API</span>
           </button>
         </div>
 
@@ -403,7 +407,7 @@
           </div>
         </div>
 
-        <!-- TAB CONTENT 3: WHALES & TOP 50 ETH HOLDERS (ETHERSCAN) -->
+        <!-- TAB CONTENT 3: WHALES & TOP 50 ETH HOLDERS -->
         <div class="tab-pane" id="paneWhales">
           <!-- Sub-navigation: Top 50 vs Live Whale Orders -->
           <div class="whale-subnav">
@@ -415,36 +419,8 @@
             </button>
           </div>
 
-          <!-- SUBVIEW 1: TOP 50 ETH HOLDERS -->
+          <!-- SUBVIEW 1: TOP 50 ETH HOLDERS (Clean & Spacious) -->
           <div class="whale-subcontent active" id="contentWhaleHolders">
-            <!-- Etherscan Rate Limit & Protection Card -->
-            <div class="etherscan-status-card">
-              <div class="status-card-header">
-                <span class="status-card-title"><i data-lucide="shield-check"></i> Etherscan V2 API (Free Plan)</span>
-                <button class="btn-refresh-whales" id="btnRefreshWhales" title="Atualizar dados (Usa cache se < 5 min)">
-                  <i data-lucide="refresh-cw"></i> Atualizar
-                </button>
-              </div>
-              <div class="status-metrics">
-                <div class="metric-pill">
-                  <span>Limite Diário:</span>
-                  <strong class="font-mono">100.000 / dia</strong>
-                </div>
-                <div class="metric-pill">
-                  <span>Chamadas Hoje:</span>
-                  <strong class="font-mono green" id="etherscanCallsUsed">3</strong>
-                </div>
-                <div class="metric-pill">
-                  <span>Taxa Máxima:</span>
-                  <strong class="font-mono">3 req / seg</strong>
-                </div>
-                <div class="metric-pill">
-                  <span>Proteção Cache:</span>
-                  <span class="badge green" id="whaleCacheBadge">Ativo (5 min)</span>
-                </div>
-              </div>
-            </div>
-
             <!-- Filter & Search Controls -->
             <div class="whale-controls">
               <input type="text" id="whaleSearchInput" class="whale-search-box" placeholder="Buscar por nome, tag ou 0x..." />
@@ -458,7 +434,7 @@
               </div>
             </div>
 
-            <!-- Top 50 Whales Cards Container -->
+            <!-- Top 50 Whales Cards Container (Full Height) -->
             <div class="whales-cards-list" id="whalesCardsList">
               <div class="whales-loading">
                 <div class="spinner"></div>
@@ -491,50 +467,159 @@
           </div>
         </div>
 
-        <!-- TAB CONTENT 3: ANALYTICS & PYTHON INTEGRATION -->
-        <div class="tab-pane" id="paneAnalytics">
-          <div class="analytics-card">
-            <h4>Indicadores Técnicos (Flask API)</h4>
-            <div class="metric-row">
-              <span>RSI (14 períodos):</span>
-              <span class="font-mono font-bold" id="cardRsi">50.0</span>
+        <!-- TAB CONTENT 4: TECHNICAL METRICS & INDICATORS -->
+        <div class="tab-pane" id="paneMetrics">
+          <div class="metrics-panel-scroll">
+            <!-- Technical Analysis Card -->
+            <div class="analytics-card">
+              <div class="card-header-flex">
+                <h4>Indicadores Técnicos</h4>
+                <span class="badge" id="cardTrendBadge">Aguardando</span>
+              </div>
+
+              <!-- RSI Section with Visual Gauge -->
+              <div class="metric-section">
+                <div class="metric-row">
+                  <span>RSI (14 períodos):</span>
+                  <span class="font-mono font-bold" id="cardRsi">50.0</span>
+                </div>
+                <div class="rsi-gauge-bar">
+                  <div class="rsi-zone-oversold" title="Sobrevendido (<30)"></div>
+                  <div class="rsi-zone-neutral" title="Neutro (30-70)"></div>
+                  <div class="rsi-zone-overbought" title="Sobrecomprado (>70)"></div>
+                  <div class="rsi-needle" id="cardRsiNeedle" style="left: 50%;"></div>
+                </div>
+                <div class="rsi-labels">
+                  <span>30 (Sobrevendido)</span>
+                  <span>50 (Neutro)</span>
+                  <span>70 (Sobrecomprado)</span>
+                </div>
+              </div>
+
+              <!-- Moving Averages & VWAP -->
+              <div class="metric-section" style="margin-top: 10px;">
+                <div class="metric-row">
+                  <span>Média Rápida (EMA 20):</span>
+                  <span class="font-mono yellow" id="cardEma20">---</span>
+                </div>
+                <div class="metric-row">
+                  <span>Média Lenta (EMA 50):</span>
+                  <span class="font-mono cyan" id="cardEma50">---</span>
+                </div>
+                <div class="metric-row">
+                  <span>VWAP Estimado:</span>
+                  <span class="font-mono" id="cardVwap">---</span>
+                </div>
+              </div>
             </div>
-            <div class="metric-row">
-              <span>EMA 20:</span>
-              <span class="font-mono" id="cardEma20">---</span>
-            </div>
-            <div class="metric-row">
-              <span>EMA 50:</span>
-              <span class="font-mono" id="cardEma50">---</span>
-            </div>
-            <div class="metric-row">
-              <span>Tendência (EMA):</span>
-              <span class="badge" id="cardTrendBadge">Aguardando</span>
-            </div>
-            <div class="metric-row">
-              <span>VWAP Estimado:</span>
-              <span class="font-mono" id="cardVwap">---</span>
+
+            <!-- 24h Summary Metrics Card -->
+            <div class="analytics-card">
+              <h4>Resumo de Mercado (24 Horas)</h4>
+              <div class="metric-row">
+                <span>Preço Máximo:</span>
+                <span class="font-mono green" id="metricHigh24">---</span>
+              </div>
+              <div class="metric-row">
+                <span>Preço Mínimo:</span>
+                <span class="font-mono red" id="metricLow24">---</span>
+              </div>
+              <div class="metric-row">
+                <span>Volume Base:</span>
+                <span class="font-mono" id="metricVolBase24">---</span>
+              </div>
+              <div class="metric-row">
+                <span>Volume Cotado:</span>
+                <span class="font-mono" id="metricVolQuote24">---</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div class="analytics-card">
-            <h4>Rotas Backend do Servidor Flask</h4>
-            <ul class="endpoint-list">
-              <li><code>GET /api/price/&lt;symbol&gt;</code></li>
-              <li><code>GET /api/ticker/&lt;symbol&gt;</code></li>
-              <li><code>GET /api/klines/&lt;symbol&gt;</code></li>
-              <li><code>GET /api/depth/&lt;symbol&gt;</code></li>
-              <li><code>GET /api/indicators/&lt;symbol&gt;</code></li>
-              <li><code>GET /api/export/&lt;symbol&gt;</code></li>
-            </ul>
-          </div>
+        <!-- TAB CONTENT 5: API STATUS, QUOTAS & CONTROL CENTER -->
+        <div class="tab-pane" id="paneAPI">
+          <div class="api-panel-scroll">
+            <!-- Etherscan API Intelligence & Quota Card -->
+            <div class="etherscan-status-card api-tab-card">
+              <div class="status-card-header">
+                <span class="status-card-title"><i data-lucide="shield-check"></i> Etherscan V2 API (Whales)</span>
+                <button class="btn-refresh-whales" id="btnRefreshWhales" title="Atualizar dados (Usa cache se < 5 min)">
+                  <i data-lucide="refresh-cw"></i> Atualizar
+                </button>
+              </div>
+              <div class="api-plan-badge-row">
+                <span class="api-plan-tag">Plano: <strong>Free ($0 / mês)</strong></span>
+                <span class="badge green" id="whaleCacheBadge">Cache: Ativo (5m)</span>
+              </div>
 
-          <div class="analytics-card">
-            <h4>Execução do Servidor Flask</h4>
-            <p class="card-desc">Inicie a aplicação completa com o comando:</p>
-            <div class="code-badge"><code>python app.py</code></div>
-            <p class="card-desc" style="margin-top: 6px;">Acesse em seu navegador:</p>
-            <div class="code-badge"><code>http://127.0.0.1:5000</code></div>
+              <!-- Quota Bar -->
+              <div class="api-quota-progress">
+                <div class="quota-progress-labels">
+                  <span>Chamadas Usadas Hoje:</span>
+                  <strong class="font-mono green"><span id="etherscanCallsUsed">3</span> / 100.000</strong>
+                </div>
+                <div class="quota-bar-track">
+                  <div class="quota-bar-fill" id="etherscanQuotaFill" style="width: 1%;"></div>
+                </div>
+              </div>
+
+              <div class="status-metrics" style="margin-top: 10px;">
+                <div class="metric-pill">
+                  <span>Limite Diário:</span>
+                  <strong class="font-mono">100.000 / dia</strong>
+                </div>
+                <div class="metric-pill">
+                  <span>Taxa Máxima:</span>
+                  <strong class="font-mono">3 req / seg</strong>
+                </div>
+                <div class="metric-pill">
+                  <span>Throttle Ativo:</span>
+                  <strong class="font-mono">400ms</strong>
+                </div>
+                <div class="metric-pill">
+                  <span>Otimização Batch:</span>
+                  <strong class="font-mono">3 calls = 50 addrs</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Binance Public Connectivity Status -->
+            <div class="analytics-card">
+              <h4>Conectividade Binance</h4>
+              <div class="metric-row">
+                <span>Public Spot REST:</span>
+                <span class="badge green">🟢 200 OK</span>
+              </div>
+              <div class="metric-row">
+                <span>Latência REST:</span>
+                <span class="font-mono" id="apiRestLatency">-- ms</span>
+              </div>
+              <div class="metric-row">
+                <span>WebSocket Stream:</span>
+                <span class="badge green" id="apiWsBadge">🟢 Conectado</span>
+              </div>
+              <div class="metric-row">
+                <span>Rate Limit IP:</span>
+                <span class="font-mono">1.200 / min</span>
+              </div>
+            </div>
+
+            <!-- Flask Backend Endpoints Directory -->
+            <div class="analytics-card">
+              <h4>Rotas do Backend Flask</h4>
+              <ul class="endpoint-list">
+                <li><span class="http-badge get">GET</span> <code>/api/price/&lt;symbol&gt;</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/ticker/&lt;symbol&gt;</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/klines/&lt;symbol&gt;</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/depth/&lt;symbol&gt;</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/trades/&lt;symbol&gt;</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/indicators/&lt;symbol&gt;</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/whales</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/whales/quota</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/export/&lt;symbol&gt;</code></li>
+                <li><span class="http-badge get">GET</span> <code>/dev/version</code></li>
+              </ul>
+            </div>
           </div>
         </div>
       </aside>
