@@ -4,18 +4,31 @@ Renderiza o dashboard e fornece rotas REST para cotações, dados históricos e 
 """
 
 import io
+import os
 import csv
+import time
 from flask import Flask, render_template, jsonify, request, Response
 from binance_client import BinanceClient
 from indicators import calculate_ema, calculate_rsi, calculate_bollinger_bands
 
 app = Flask(__name__)
+
+# Configurações para desenvolvimento e tempo real
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+SERVER_START_TIME = time.time()
+
 client = BinanceClient()
 
 @app.route("/")
 def index():
     """Renderiza a página principal do terminal."""
     return render_template("index.html")
+
+@app.route("/dev/version")
+def dev_version():
+    """Retorna o timestamp de inicialização do servidor para LiveReload automático no navegador."""
+    return jsonify({"server_start_time": SERVER_START_TIME})
 
 @app.route("/api/health")
 def health():
@@ -153,7 +166,17 @@ def export_csv(symbol):
 
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print(" 🚀 Servidor Flask Binance Terminal Iniciado!")
-    print(" 🌐 Acesse no seu navegador: http://127.0.0.1:5000")
+    print(" [>] Servidor Flask Binance Terminal Iniciado!")
+    print(" [*] Acesse no seu navegador: http://127.0.0.1:5000")
+    print(" [*] LiveReload Ativo: alteracoes em codigo ou telas recarregam em tempo real!")
     print("="*60 + "\n")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+
+    # Monitorar alterações em templates HTML, CSS e JS para recarregamento instantâneo
+    extra_files = []
+    for folder in ["templates", "static"]:
+        if os.path.exists(folder):
+            for root, dirs, files in os.walk(folder):
+                for f in files:
+                    extra_files.append(os.path.join(root, f))
+
+    app.run(host="127.0.0.1", port=5000, debug=True, extra_files=extra_files)

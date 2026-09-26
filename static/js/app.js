@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadSymbolData(currentSymbol, currentInterval);
   startClock();
+  setupLiveReload();
 });
 
 // Setup Clock
@@ -897,3 +898,25 @@ function showLoading(show) {
   if (show) el.chartLoader.classList.remove('hidden');
   else el.chartLoader.classList.add('hidden');
 }
+
+// 9. AUTOMATIC LIVERELOAD (Desenvolvimento em Tempo Real)
+function setupLiveReload() {
+  let initialServerTime = null;
+  setInterval(async () => {
+    try {
+      const res = await fetch('/dev/version');
+      if (res.ok) {
+        const data = await res.json();
+        if (initialServerTime === null) {
+          initialServerTime = data.server_start_time;
+        } else if (data.server_start_time && data.server_start_time !== initialServerTime) {
+          console.log('[LiveReload] Servidor Flask reiniciado por alteração de código. Recarregando página...');
+          window.location.reload();
+        }
+      }
+    } catch (e) {
+      // Ignora pequenas falhas de rede durante o reinício do servidor
+    }
+  }, 1200);
+}
+
