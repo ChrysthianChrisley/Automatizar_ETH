@@ -1,0 +1,118 @@
+# 🚀 Automatizar ETH & BTC - Flask Binance Market Terminal
+
+Terminal financeiro e toolkit de automação para **Ethereum (ETH)** e **Bitcoin (BTC)** construído com **Python Flask**, **TradingView Lightweight Charts** e a **API Spot da Binance (v3)** com **WebSockets**.
+
+---
+
+## 📁 Estrutura Organizada do Projeto
+
+O projeto segue o padrão profissional de aplicações **Flask**:
+
+```text
+Automatizar_ETH/
+│
+├── app.py                      # Servidor Flask principal (rotas Web e API REST)
+├── binance_client.py           # Cliente para consumo da API pública da Binance
+├── indicators.py               # Motor de cálculo de indicadores técnicos (EMA, RSI, Bollinger)
+├── export_historical.py        # Script CLI para download de dados históricos para CSV
+├── stream_realtime.py          # Monitor de cotações e trades em tempo real via WebSocket
+│
+├── templates/                  # Arquivos de templates HTML (Jinja2)
+│   └── index.html              # Interface do terminal financeiro
+│
+├── static/                     # Arquivos estáticos servidos pelo Flask
+│   ├── css/
+│   │   └── style.css           # Estilos e design moderno do terminal dark
+│   └── js/
+│       └── app.js              # Lógica de gráficos TradingView e WebSockets Binance
+│
+├── requirements.txt            # Dependências do projeto (Flask, requests, pandas, etc.)
+├── .gitignore                  # Regras para ignorar arquivos temporários, caches e CSVs
+├── .env.example                # Modelo de variáveis de ambiente
+└── README.md                   # Documentação completa
+```
+
+---
+
+## ⚡ 1. Instalação e Como Rodar com Flask
+
+### Passo 1: Instale as dependências
+Abra o terminal na pasta do projeto e execute:
+```bash
+pip install -r requirements.txt
+```
+
+### Passo 2: Inicie o servidor Flask
+```bash
+python app.py
+```
+
+### Passo 3: Acesse no seu navegador
+Abra seu navegador e acesse:
+👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+
+---
+
+## 🛠️ 2. Rotas Backend da API Flask (`app.py`)
+
+Além de servir a interface gráfica, o backend Flask disponibiliza rotas REST prontas para consumo:
+
+| Rota | Método | Descrição |
+| :--- | :---: | :--- |
+| `/` | `GET` | Renderiza a página principal do terminal (`index.html`). |
+| `/api/price/<symbol>` | `GET` | Retorna o preço atual do par (ex: `/api/price/ETHUSDT`). |
+| `/api/ticker/<symbol>` | `GET` | Retorna métricas de 24 horas (máx, mín, variação, volume). |
+| `/api/klines/<symbol>` | `GET` | Retorna candles históricos (`?interval=15m&limit=500`). |
+| `/api/depth/<symbol>` | `GET` | Retorna o livro de ofertas (Order Book com bids e asks). |
+| `/api/trades/<symbol>` | `GET` | Retorna as negociações recentes a mercado. |
+| `/api/indicators/<symbol>` | `GET` | Calcula EMA 20, EMA 50, RSI 14 e Bollinger Bands no servidor. |
+| `/api/export/<symbol>` | `GET` | Baixa diretamente uma planilha CSV com os candles solicitados. |
+
+---
+
+## 🐍 3. Scripts de Linha de Comando (CLI)
+
+### A. Teste de Conexão com a Binance
+```bash
+python binance_client.py
+```
+
+### B. Baixar Candles Históricos em Lote para CSV (com Paginação Automática)
+```bash
+# Formato: python export_historical.py <PAR> <INTERVALO> <QUANTIDADE>
+python export_historical.py ETHUSDT 1h 1000
+python export_historical.py BTCUSDT 5m 2000
+```
+
+### C. Streaming de Dados ao Vivo no Terminal
+```bash
+python stream_realtime.py ethusdt 1m
+```
+
+### D. Análise Técnica Automatizada
+```bash
+python indicators.py
+```
+
+---
+
+## 📦 4. Preparação para Commit e Push no Git
+
+O repositório já foi inicializado (`git init`) com o arquivo [`.gitignore`](file:///c:/Users/cytch/Documents/GitHub/Automatizar_ETH/.gitignore) devidamente configurado para não subir caches (`__pycache__`), arquivos `.env` ou grandes volumes de planilhas locais `.csv`.
+
+Para realizar seu primeiro commit e enviar para o GitHub:
+
+```bash
+# 1. Adicionar todos os arquivos organizados
+git add .
+
+# 2. Criar o commit inicial
+git commit -m "feat: initial commit - flask binance market terminal & toolkit"
+
+# 3. Vincular ao seu repositório remoto no GitHub (substitua pela sua URL)
+git branch -M main
+git remote add origin https://github.com/SEU_USUARIO/Automatizar_ETH.git
+
+# 4. Enviar os arquivos
+git push -u origin main
+```

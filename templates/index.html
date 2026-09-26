@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Binance Market Terminal | ETH & BTC em Tempo Real (Flask)</title>
+  <meta name="description" content="Terminal de mercado financeiro em tempo real para Ethereum (ETH) e Bitcoin (BTC) utilizando Flask e a API da Binance. Gráficos históricos, Order Book e Trades ao vivo.">
+  
+  <!-- Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- TradingView Lightweight Charts Library -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Flask Static CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="terminal-container">
+    <!-- TOP HEADER -->
+    <header class="terminal-header">
+      <div class="header-left">
+        <div class="brand">
+          <div class="brand-icon">
+            <i data-lucide="activity"></i>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">BINANCE TERMINAL</span>
+            <span class="brand-subtitle">ETH & BTC Flask Intelligence</span>
+          </div>
+        </div>
+
+        <!-- Symbol Selector Tabs -->
+        <div class="symbol-tabs" id="symbolTabs">
+          <button class="symbol-btn active" data-symbol="ETHUSDT" id="btn-ETHUSDT">
+            <span class="symbol-icon eth-color">Ξ</span> ETH/USDT
+          </button>
+          <button class="symbol-btn" data-symbol="BTCUSDT" id="btn-BTCUSDT">
+            <span class="symbol-icon btc-color">₿</span> BTC/USDT
+          </button>
+          <button class="symbol-btn" data-symbol="ETHBTC" id="btn-ETHBTC">
+            <span class="symbol-icon">Ξ/₿</span> ETH/BTC
+          </button>
+          <button class="symbol-btn" data-symbol="SOLUSDT" id="btn-SOLUSDT">
+            <span class="symbol-icon sol-color">◎</span> SOL/USDT
+          </button>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Live Connection Status -->
+        <div class="connection-status" id="wsStatus">
+          <span class="status-dot pulsing"></span>
+          <span class="status-text" id="wsStatusText">WebSocket Conectado</span>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="action-buttons">
+          <button class="btn btn-secondary" id="btnExportCSV" title="Exportar dados históricos em CSV">
+            <i data-lucide="download"></i>
+            <span>Exportar CSV</span>
+          </button>
+          <button class="btn btn-secondary" id="btnRefresh" title="Recarregar Dados REST">
+            <i data-lucide="refresh-cw"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 24H METRICS BAR -->
+    <section class="ticker-bar" id="tickerBar">
+      <div class="ticker-item price-item">
+        <span class="ticker-label">Preço Atual</span>
+        <div class="live-price-wrapper">
+          <span class="live-price" id="livePrice">---.--</span>
+          <span class="price-currency" id="priceCurrency">USDT</span>
+        </div>
+      </div>
+
+      <div class="ticker-item">
+        <span class="ticker-label">Variação 24h</span>
+        <div class="ticker-value" id="priceChange24h">
+          <span id="changeVal">---</span>
+          <span class="badge" id="changePercentBadge">---%</span>
+        </div>
+      </div>
+
+      <div class="ticker-item">
+        <span class="ticker-label">Máxima 24h</span>
+        <span class="ticker-value font-mono" id="high24h">---.--</span>
+      </div>
+
+      <div class="ticker-item">
+        <span class="ticker-label">Mínima 24h</span>
+        <span class="ticker-value font-mono" id="low24h">---.--</span>
+      </div>
+
+      <div class="ticker-item">
+        <span class="ticker-label">Volume 24h (<span id="baseAssetLabel">ETH</span>)</span>
+        <span class="ticker-value font-mono" id="volBase24h">---</span>
+      </div>
+
+      <div class="ticker-item">
+        <span class="ticker-label">Volume 24h (USDT)</span>
+        <span class="ticker-value font-mono" id="volQuote24h">---</span>
+      </div>
+
+      <div class="ticker-item range-item">
+        <div class="range-header">
+          <span class="ticker-label">Range 24h</span>
+          <span class="range-percent" id="rangePercent">50%</span>
+        </div>
+        <div class="range-bar-container">
+          <div class="range-bar-fill" id="rangeBarFill" style="width: 50%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="terminal-workspace">
+      <!-- LEFT: CHART SECTION -->
+      <section class="chart-section">
+        <!-- Chart Controls Toolbar -->
+        <div class="chart-toolbar">
+          <div class="toolbar-group">
+            <span class="toolbar-label">Intervalo:</span>
+            <div class="interval-selector" id="intervalSelector">
+              <button class="interval-btn" data-interval="1m" id="int-1m">1m</button>
+              <button class="interval-btn" data-interval="5m" id="int-5m">5m</button>
+              <button class="interval-btn active" data-interval="15m" id="int-15m">15m</button>
+              <button class="interval-btn" data-interval="1h" id="int-1h">1h</button>
+              <button class="interval-btn" data-interval="4h" id="int-4h">4h</button>
+              <button class="interval-btn" data-interval="1d" id="int-1d">1D</button>
+              <button class="interval-btn" data-interval="1w" id="int-1w">1S</button>
+            </div>
+          </div>
+
+          <div class="toolbar-separator"></div>
+
+          <div class="toolbar-group">
+            <span class="toolbar-label">Indicadores:</span>
+            <button class="toggle-pill active" id="toggleEma20">EMA 20</button>
+            <button class="toggle-pill active" id="toggleEma50">EMA 50</button>
+            <button class="toggle-pill" id="toggleRsi">RSI (14)</button>
+            <button class="toggle-pill" id="toggleBands">Bollinger</button>
+          </div>
+
+          <div class="toolbar-group" style="margin-left: auto;">
+            <div class="chart-legend" id="chartLegend">
+              <span class="legend-item ema20-legend">EMA 20: <span id="valEma20">---</span></span>
+              <span class="legend-item ema50-legend">EMA 50: <span id="valEma50">---</span></span>
+              <span class="legend-item rsi-legend" id="legendRsi" style="display:none;">RSI: <span id="valRsi">---</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TradingView Chart Container -->
+        <div class="chart-wrapper" id="tvChartContainer">
+          <div class="chart-loading-overlay" id="chartLoader">
+            <div class="spinner"></div>
+            <span>Carregando dados históricos da Binance...</span>
+          </div>
+        </div>
+
+        <!-- RSI Sub-chart Container (Toggleable) -->
+        <div class="rsi-chart-wrapper" id="rsiChartContainer" style="display: none;">
+          <div class="rsi-chart-header">
+            <span>Relative Strength Index (RSI 14)</span>
+            <span class="rsi-current-val" id="rsiSubVal">50.0</span>
+          </div>
+          <div id="tvRsiContainer" style="height: 120px; width: 100%;"></div>
+        </div>
+
+        <!-- Historical Summary Bar -->
+        <div class="chart-footer-stats">
+          <div class="stat-pill">
+            <span class="stat-name">Total Candles:</span>
+            <span class="stat-val font-mono" id="statCandlesCount">500</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Abertura:</span>
+            <span class="stat-val font-mono" id="statOpen">---</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Máxima:</span>
+            <span class="stat-val font-mono green" id="statHigh">---</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Mínima:</span>
+            <span class="stat-val font-mono red" id="statLow">---</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Fechamento:</span>
+            <span class="stat-val font-mono" id="statClose">---</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-name">Última Atualização:</span>
+            <span class="stat-val font-mono" id="statLastUpdate">---</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: ORDER BOOK & RECENT TRADES SECTION -->
+      <aside class="side-panel">
+        <div class="side-tabs">
+          <button class="side-tab active" data-tab="orderbook" id="tabOrderBook">
+            <i data-lucide="layers"></i>
+            <span>Order Book</span>
+          </button>
+          <button class="side-tab" data-tab="trades" id="tabTrades">
+            <i data-lucide="zap"></i>
+            <span>Trades ao Vivo</span>
+          </button>
+          <button class="side-tab" data-tab="analytics" id="tabAnalytics">
+            <i data-lucide="bar-chart-2"></i>
+            <span>Métricas & Flask</span>
+          </button>
+        </div>
+
+        <!-- TAB CONTENT 1: ORDER BOOK -->
+        <div class="tab-pane active" id="paneOrderBook">
+          <div class="orderbook-header">
+            <span>Preço (USDT)</span>
+            <span>Quant.</span>
+            <span>Total</span>
+          </div>
+
+          <!-- Asks (Sells - Red) -->
+          <div class="orderbook-list asks-list" id="asksList">
+            <!-- Dynamic Asks -->
+          </div>
+
+          <!-- Spread Display -->
+          <div class="orderbook-spread" id="spreadDisplay">
+            <div class="spread-left">
+              <span class="spread-price font-mono" id="spreadPrice">---.--</span>
+              <span class="spread-indicator" id="spreadArrow">▲</span>
+            </div>
+            <div class="spread-right">
+              <span>Spread: <strong id="spreadValue" class="font-mono">0.01 (0.00%)</strong></span>
+            </div>
+          </div>
+
+          <!-- Bids (Buys - Green) -->
+          <div class="orderbook-list bids-list" id="bidsList">
+            <!-- Dynamic Bids -->
+          </div>
+
+          <!-- Depth Gauge Bar -->
+          <div class="depth-ratio-bar">
+            <div class="ratio-bids" id="bidsRatio" style="width: 50%;">50% Compra</div>
+            <div class="ratio-asks" id="asksRatio" style="width: 50%;">50% Venda</div>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT 2: LIVE TRADES -->
+        <div class="tab-pane" id="paneTrades">
+          <div class="trades-header">
+            <span>Preço</span>
+            <span>Tamanho</span>
+            <span>Hora</span>
+          </div>
+          <div class="trades-list" id="tradesList">
+            <!-- Dynamic Live Trades -->
+          </div>
+        </div>
+
+        <!-- TAB CONTENT 3: ANALYTICS & PYTHON INTEGRATION -->
+        <div class="tab-pane" id="paneAnalytics">
+          <div class="analytics-card">
+            <h4>Indicadores Técnicos (Flask API)</h4>
+            <div class="metric-row">
+              <span>RSI (14 períodos):</span>
+              <span class="font-mono font-bold" id="cardRsi">50.0</span>
+            </div>
+            <div class="metric-row">
+              <span>EMA 20:</span>
+              <span class="font-mono" id="cardEma20">---</span>
+            </div>
+            <div class="metric-row">
+              <span>EMA 50:</span>
+              <span class="font-mono" id="cardEma50">---</span>
+            </div>
+            <div class="metric-row">
+              <span>Tendência (EMA):</span>
+              <span class="badge" id="cardTrendBadge">Aguardando</span>
+            </div>
+            <div class="metric-row">
+              <span>VWAP Estimado:</span>
+              <span class="font-mono" id="cardVwap">---</span>
+            </div>
+          </div>
+
+          <div class="analytics-card">
+            <h4>Rotas Backend do Servidor Flask</h4>
+            <ul class="endpoint-list">
+              <li><code>GET /api/price/&lt;symbol&gt;</code></li>
+              <li><code>GET /api/ticker/&lt;symbol&gt;</code></li>
+              <li><code>GET /api/klines/&lt;symbol&gt;</code></li>
+              <li><code>GET /api/depth/&lt;symbol&gt;</code></li>
+              <li><code>GET /api/indicators/&lt;symbol&gt;</code></li>
+              <li><code>GET /api/export/&lt;symbol&gt;</code></li>
+            </ul>
+          </div>
+
+          <div class="analytics-card">
+            <h4>Execução do Servidor Flask</h4>
+            <p class="card-desc">Inicie a aplicação completa com o comando:</p>
+            <div class="code-badge"><code>python app.py</code></div>
+            <p class="card-desc" style="margin-top: 6px;">Acesse em seu navegador:</p>
+            <div class="code-badge"><code>http://127.0.0.1:5000</code></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- FOOTER STATUS -->
+    <footer class="terminal-footer">
+      <div class="footer-left">
+        <span class="api-tag">Flask + Binance Public API v3</span>
+        <span class="separator">•</span>
+        <span id="footerClock">--:--:-- UTC</span>
+        <span class="separator">•</span>
+        <span id="footerPing">Latência: 45ms</span>
+      </div>
+      <div class="footer-right">
+        <span>Backend: <strong>Flask</strong> | Pasta: <code>Automatizar_ETH</code></span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Flask Static JS -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
