@@ -661,6 +661,35 @@ body {
   justify-content: flex-start;
 }
 
+/* Order Book Whale Radar Banner */
+.ob-whale-radar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px;
+  background: rgba(240, 185, 11, 0.06);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 11px;
+}
+
+.ob-whale-radar-title {
+  color: var(--binance-yellow);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ob-whale-radar-title i {
+  width: 12px;
+  height: 12px;
+}
+
+.ob-whale-radar-status {
+  font-size: 10.5px;
+  color: #fff;
+}
+
 .ob-row {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr;
@@ -671,10 +700,40 @@ body {
   cursor: pointer;
   text-align: right;
   line-height: 1.2;
+  transition: background-color 0.15s ease;
 }
 
 .ob-row:hover {
   background: rgba(255, 255, 255, 0.04);
+}
+
+/* Whale Wall in Order Book */
+.ob-row.whale-wall {
+  background: rgba(240, 185, 11, 0.09) !important;
+  border-left: 3px solid var(--binance-yellow) !important;
+}
+
+.ob-row.mega-whale-wall {
+  background: rgba(240, 185, 11, 0.18) !important;
+  border-left: 4px solid #ffd700 !important;
+  animation: whalePulse 2s infinite ease-in-out;
+}
+
+.ob-whale-badge {
+  font-size: 9px;
+  background: var(--binance-yellow);
+  color: #000;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 800;
+  margin-left: 4px;
+  letter-spacing: -0.2px;
+  vertical-align: middle;
+}
+
+.ob-row.mega-whale-wall .ob-whale-badge {
+  background: #ffd700;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
 }
 
 .ob-row span:first-child {
