@@ -555,7 +555,15 @@
     </footer>
   </div>
 
-  <!-- Flask Static JS -->
+  <!-- Modular Frontend Architecture -->
+  <script src="{{ url_for('static', filename='js/state.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/indicators.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/orderbook.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/tapereading.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/whales.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/websocket.js') }}"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   <script>
     // Initialize Lucide Icons
