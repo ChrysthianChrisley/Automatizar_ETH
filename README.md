@@ -34,22 +34,32 @@ Automatizar_ETH/
 
 ---
 
-## ⚡ 1. Instalação e Como Rodar com Flask
+## ⚡ 1. Instalação e Execução Rápida (1 Clique no Windows)
 
-### Passo 1: Instale as dependências
-Abra o terminal na pasta do projeto e execute:
+### 🖱️ Em um novo computador:
+1. Dê um duplo clique no arquivo:
+   👉 **`Instalador.bat`**
+   - Ele verifica se o Python está instalado;
+   - Instala e atualiza todas as dependências (`requirements.txt`);
+   - Gera o arquivo `.env` automaticamente com a chave Etherscan V2 já configurada;
+   - Dá a opção de iniciar o servidor na hora.
+
+2. Para iniciar o servidor e abrir o navegador a qualquer momento:
+   👉 **`Iniciar_Servidor.bat`**
+   - Inicia o servidor Flask em segundo plano;
+   - Abre automaticamente a página principal no seu navegador em `http://127.0.0.1:5000`.
+
+---
+
+### 💻 Ou via Terminal Manual:
 ```bash
 pip install -r requirements.txt
-```
-
-### Passo 2: Inicie o servidor Flask
-```bash
 python app.py
 ```
-
-### Passo 3: Acesse no seu navegador
-Abra seu navegador e acesse:
-👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+Acesse no navegador:
+👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)** (Terminal)
+👉 **[http://127.0.0.1:5000/data-analise](http://127.0.0.1:5000/data-analise)** (Data Análise & Volatilidade)
+👉 **[http://127.0.0.1:5000/liquidez](http://127.0.0.1:5000/liquidez)** (Monitor de Liquidez & Stops)
 
 ---
 
