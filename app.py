@@ -14,6 +14,7 @@ from binance_client import BinanceClient
 from etherscan_client import EtherscanWhaleTracker
 from indicators import calculate_ema, calculate_rsi, calculate_bollinger_bands, calculate_macd
 from volatility_analyzer import VolatilityAnalyzer
+from liquidity_analyzer import MarketLiquidityAnalyzer
 
 app = Flask(__name__)
 
@@ -120,6 +121,7 @@ def get_app_version():
 client = BinanceClient()
 whale_tracker = EtherscanWhaleTracker()
 volatility_analyzer = VolatilityAnalyzer(client)
+liquidity_analyzer = MarketLiquidityAnalyzer()
 
 @app.route("/favicon.ico")
 def favicon():
@@ -138,6 +140,38 @@ def index():
 def data_analise():
     """Renderiza o módulo extra de Análise de Dados e Volatilidade Histórica (Manhã, Tarde, Noite, etc.)."""
     return render_template("data_analise.html", version=int(get_app_version()))
+
+@app.route("/liquidez")
+@app.route("/liquidez.html")
+def liquidez_page():
+    """Renderiza o módulo de Monitoramento de Liquidez & Caça de Stops (ETHUSDT)."""
+    return render_template("liquidez.html", version=int(get_app_version()))
+
+@app.route("/api/liquidity/status")
+def api_liquidity_status():
+    """
+    Retorna o status em tempo real do setup de liquidez e probabilidade de varredura de stops.
+    Parâmetros:
+      - timeframe: 1h (padrão), 15m, 4h
+      - target_high: 2530.0 (padrão)
+      - target_low: 2480.0 (padrão)
+    """
+    timeframe = request.args.get("timeframe", "1h")
+    try:
+        target_high = float(request.args.get("target_high", 2530.0))
+    except (ValueError, TypeError):
+        target_high = 2530.0
+
+    try:
+        target_low = float(request.args.get("target_low", 2480.0))
+    except (ValueError, TypeError):
+        target_low = 2480.0
+
+    try:
+        res = liquidity_analyzer.evaluate_setup(timeframe=timeframe, target_high=target_high, target_low=target_low)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
 
 @app.route("/api/analysis/volatility")
 def api_volatility_analysis():

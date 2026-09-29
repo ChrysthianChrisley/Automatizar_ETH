@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor de Liquidez & Caça de Stops | Binance Terminal ETH & BTC</title>
+  <meta name="description" content="Sistema quantitativo de confluência técnica e rastreamento de alinhamento de mercado para varreduras de liquidez (stop hunts).">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <!-- Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- CSS Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ version }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/liquidez.css') }}?v={{ version }}">
+</head>
+<body>
+  <div class="liquidity-container">
+    <!-- HEADER -->
+    <header class="liquidity-header">
+      <div class="liquidity-brand">
+        <div class="liquidity-brand-icon">
+          <i data-lucide="crosshair"></i>
+        </div>
+        <div class="liquidity-brand-text">
+          <div class="liquidity-brand-title">
+            <span>MONITOR DE LIQUIDEZ</span>
+            <span class="badge-tag">SWEEP HUNTER</span>
+          </div>
+          <div class="liquidity-brand-subtitle">
+            Confluência de 5 Pilares & Probabilidade de Varredura de Stops (ETH / BTC)
+          </div>
+        </div>
+      </div>
+
+      <div class="liquidity-header-actions">
+        <span id="lastUpdated" style="font-size: 11px; color: var(--text-secondary); margin-right: 8px;"></span>
+        <a href="/" class="btn btn-secondary" title="Voltar ao Terminal Principal">
+          <i data-lucide="terminal"></i>
+          <span>Terminal</span>
+        </a>
+        <a href="/data-analise" class="btn btn-secondary" title="Abrir Módulo de Data Análise">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Data Análise</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- PAINEL DE CONTROLE DE ALVOS E PARÂMETROS -->
+    <section class="liquidity-control-panel">
+      <div class="control-group">
+        <!-- Timeframe -->
+        <div class="control-item">
+          <label class="control-label" for="timeframeSelect">Timeframe</label>
+          <select id="timeframeSelect" class="control-select">
+            <option value="15m">15 minutos (15m)</option>
+            <option value="1h" selected>1 hora (1h) - Recomendado</option>
+            <option value="4h">4 horas (4h)</option>
+          </select>
+        </div>
+
+        <!-- Target High (Entrada na Zona de Liquidez) -->
+        <div class="control-item">
+          <label class="control-label" for="targetHighInput">Alvo Superior (Início da Zona)</label>
+          <input type="number" id="targetHighInput" step="5" value="2530.0" class="control-input" style="width: 130px;" />
+        </div>
+
+        <!-- Target Low (Fim da Zona de Stops) -->
+        <div class="control-item">
+          <label class="control-label" for="targetLowInput">Alvo Inferior (Fundo da Zona)</label>
+          <input type="number" id="targetLowInput" step="5" value="2480.0" class="control-input" style="width: 130px;" />
+        </div>
+
+        <!-- Auto Refresh -->
+        <div class="control-item">
+          <label class="control-label" for="refreshIntervalSelect">Atualização Automática</label>
+          <select id="refreshIntervalSelect" class="control-select">
+            <option value="10">A cada 10 segundos</option>
+            <option value="15" selected>A cada 15 segundos</option>
+            <option value="30">A cada 30 segundos</option>
+            <option value="0">Manual</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn-recalc" id="btnRecalc">
+        <i data-lucide="refresh-cw"></i>
+        <span>Recalcular Setup</span>
+      </button>
+    </section>
+
+    <!-- WORKSPACE -->
+    <main class="liquidity-workspace">
+      <!-- 1. Master Hero Scoreboard -->
+      <section class="hero-scoreboard">
+        <!-- Coluna 1: Gauge Circular de Probabilidade Global -->
+        <div class="gauge-box">
+          <div class="gauge-circle" id="gaugeCircle">
+            <div class="gauge-inner">
+              <span class="gauge-val" id="gaugeVal">0%</span>
+              <span class="gauge-label">Prontidão</span>
+            </div>
+          </div>
+          <span class="gauge-status-badge" id="gaugeStatusBadge">Calculando...</span>
+        </div>
+
+        <!-- Coluna 2: Cotação Atual e Proximidade -->
+        <div class="hero-center">
+          <div class="hero-title-row">
+            <span class="hero-title">Ethereum (ETH / USDT)</span>
+            <span class="price-target-badge" id="targetBadge">Alvo: 2480.00 - 2530.00 USDT</span>
+          </div>
+
+          <div class="price-target-display">
+            <span class="price-main" id="liveEthPrice">---.--</span>
+            <span style="font-size: 13px; color: var(--text-secondary);">Distância até o alvo: <strong id="distTargetVal">---</strong></span>
+          </div>
+
+          <div class="proximity-bar-wrap">
+            <div class="proximity-bar-labels">
+              <span id="recentHighLabel">Topo 60c: $---</span>
+              <span>Proximidade: <strong id="proxPctLabel">0%</strong></span>
+              <span id="targetHighLabel">Alvo: $2530.00</span>
+            </div>
+            <div class="proximity-bar-track">
+              <div class="proximity-bar-fill" id="proxFill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna 3: Decomposição da Fórmula Composta -->
+        <div class="hero-right">
+          <div class="hero-title" style="margin-bottom: 4px;">Composição do Índice</div>
+
+          <!-- Alinhamento Técnico (60%) -->
+          <div class="breakdown-row">
+            <div class="breakdown-header">
+              <span class="label">Alinhamento Técnico (5 Indicadores):</span>
+              <span class="val" id="techValLabel">0% (Peso 60%)</span>
+            </div>
+            <div class="mini-track">
+              <div class="mini-fill" id="techBarFill" style="width: 0%; background: #3498db;"></div>
+            </div>
+          </div>
+
+          <!-- Proximidade de Preço (40%) -->
+          <div class="breakdown-row">
+            <div class="breakdown-header">
+              <span class="label">Proximidade Geográfica de Preço:</span>
+              <span class="val" id="proxValLabel">0% (Peso 40%)</span>
+            </div>
+            <div class="mini-track">
+              <div class="mini-fill" id="proxBarFill" style="width: 0%; background: #f0b90b;"></div>
+            </div>
+          </div>
+
+          <!-- Contexto Multimercado -->
+          <div style="display: flex; gap: 16px; margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 11px;">
+            <div>BTC/USDT: <strong id="btcPriceVal" class="font-mono">---</strong></div>
+            <div>ETH/BTC: <strong id="ethbtcRatioVal" class="font-mono">---</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Grid dos 5 Pilares de Confluência Técnica -->
+      <section>
+        <div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="check-square" style="color: #f0b90b; width: 16px; height: 16px;"></i>
+          <span>Os 5 Pilares de Confluência Técnica (Soma de Pesos = 100%)</span>
+        </div>
+        <div class="indicators-grid-5" id="indicatorsGrid">
+          <!-- Preenchido dinamicamente via JS -->
+        </div>
+      </section>
+
+      <!-- 3. Racional Didático Institucional -->
+      <section class="educational-card">
+        <h4>
+          <i data-lucide="info"></i>
+          <span>Como Funciona o Algoritmo de Caça de Liquidez (Sweep Hunter)?</span>
+        </h4>
+        <p>
+          Os grandes participantes do mercado (Market Makers e instituições) utilizam zonas de suporte óbvias — como a faixa de <strong>2.480 a 2.530 USDT</strong> — onde se acumulam ordens de <em>stop-loss</em> de compradores e posições de liquidação alavancadas.
+        </p>
+        <p>
+          O modelo não olha apenas se o preço está caindo, mas se <strong>toda a estrutura macro e micro está alinhada</strong> para a varredura:
+          <br>• <strong>Supertrend e SAR Bearish</strong> confirmam que a força direcional está totalmente do lado vendedor.
+          <br>• <strong>ETH e BTC abaixo da EMA25</strong> mostram perda de tração de curto prazo em todo o ecossistema.
+          <br>• <strong>Fraqueza no par ETH/BTC</strong> indica que investidores estão fugindo do Ethereum em direção ao Bitcoin ou stablecoins, deixando o livro de ofertas mais vulnerável a uma varredura violenta de liquidez.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Script Modular -->
+  <script src="{{ url_for('static', filename='js/liquidez.js') }}?v={{ version }}"></script>
+</body>
+</html>
