@@ -84,6 +84,44 @@ def calculate_bollinger_bands(prices: List[float], period: int = 20, num_std: fl
 
     return {"middle": sma, "upper": upper, "lower": lower}
 
+def calculate_macd(prices: List[float], fast_period: int = 12, slow_period: int = 26, signal_period: int = 9) -> Dict[str, List[float]]:
+    """
+    Moving Average Convergence Divergence (MACD).
+    Calcula:
+      - Linha MACD: EMA(fast) - EMA(slow)
+      - Linha de Sinal: EMA(signal_period) da Linha MACD
+      - Histograma: MACD - Sinal
+    """
+    ema_fast = calculate_ema(prices, fast_period)
+    ema_slow = calculate_ema(prices, slow_period)
+
+    macd_line = [None] * len(prices)
+    for i in range(len(prices)):
+        if ema_fast[i] is not None and ema_slow[i] is not None:
+            macd_line[i] = ema_fast[i] - ema_slow[i]
+
+    # Calcular EMA de Sinal sobre os valores válidos do MACD
+    valid_indices = [i for i, v in enumerate(macd_line) if v is not None]
+    signal_line = [None] * len(prices)
+    histogram = [None] * len(prices)
+
+    if len(valid_indices) >= signal_period:
+        valid_macd_values = [macd_line[i] for i in valid_indices]
+        raw_signal = calculate_ema(valid_macd_values, signal_period)
+
+        for k, s in enumerate(raw_signal):
+            orig_idx = valid_indices[k]
+            signal_line[orig_idx] = s
+            if macd_line[orig_idx] is not None and s is not None:
+                histogram[orig_idx] = macd_line[orig_idx] - s
+
+    return {
+        "macd": macd_line,
+        "signal": signal_line,
+        "histogram": histogram
+    }
+
+
 if __name__ == "__main__":
     from binance_client import BinanceClient
 

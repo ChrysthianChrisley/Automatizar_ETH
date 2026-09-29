@@ -6,6 +6,10 @@
   <title>Binance Market Terminal | ETH & BTC em Tempo Real (Flask)</title>
   <meta name="description" content="Terminal de mercado financeiro em tempo real para Ethereum (ETH) e Bitcoin (BTC) utilizando Flask e a API da Binance. Gráficos históricos, Order Book e Trades ao vivo.">
   
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
   <!-- Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,8 +63,22 @@
           <span class="status-text" id="wsStatusText">WebSocket Conectado</span>
         </div>
 
+        <!-- Persistent Layout Status Badge -->
+        <div class="layout-status-badge" id="layoutStatus" title="Layout e marcações sincronizados automaticamente em terminal_layout.json">
+          <i data-lucide="save"></i>
+          <span id="layoutStatusText">💾 Layout: terminal_layout.json</span>
+        </div>
+
         <!-- Quick Actions -->
         <div class="action-buttons">
+          <a href="/data-analise" class="btn btn-secondary btn-analysis-link" id="btnDataAnalysis" title="Módulo Extra: Data Análise e Volatilidade Histórica (Manhã, Tarde e Noite)">
+            <i data-lucide="bar-chart-2"></i>
+            <span>Data Análise</span>
+          </a>
+          <button class="btn btn-secondary" id="btnResetLayout" title="Restaurar layout, spreads, indicadores e marcações para o padrão">
+            <i data-lucide="rotate-ccw"></i>
+            <span>Resetar</span>
+          </button>
           <button class="btn btn-secondary" id="btnExportCSV" title="Exportar dados históricos em CSV">
             <i data-lucide="download"></i>
             <span>Exportar CSV</span>
@@ -127,20 +145,26 @@
       <section class="chart-section">
         <!-- Chart Controls Toolbar -->
         <div class="chart-toolbar">
-          <!-- View Switcher: Chart vs Expanded Live Trades (Tape Reading) -->
+          <!-- View Switcher: Chart vs Livro Binance vs Expanded Tape Reading vs Data Análise -->
           <div class="view-mode-tabs" id="viewModeTabs">
             <button class="view-tab-btn active" data-view="chart" id="btnViewChart">
               <i data-lucide="line-chart"></i> <span>Gráfico</span>
             </button>
+            <button class="view-tab-btn" data-view="orderbook" id="btnViewOrderBook">
+              <i data-lucide="book-open"></i> <span>Livro de Ofertas (Binance)</span>
+            </button>
             <button class="view-tab-btn" data-view="tape" id="btnViewTape">
               <i data-lucide="zap"></i> <span>Tape Reading Expandido</span>
             </button>
+            <a href="/data-analise" class="view-tab-btn view-tab-link" id="btnViewDataAnalysis" title="Abrir Módulo de Data Análise e Estatísticas Históricas">
+              <i data-lucide="pie-chart"></i> <span>Data Análise</span>
+            </a>
           </div>
 
           <div class="toolbar-separator"></div>
 
           <!-- Chart Interval Controls (visible in chart mode) -->
-          <div class="chart-controls-group" id="chartControlsGroup">
+          <div class="chart-controls-group" id="chartControlsGroup" style="display: inline-flex; align-items: center; gap: 10px;">
             <div class="toolbar-group">
               <span class="toolbar-label">Intervalo:</span>
               <div class="interval-selector" id="intervalSelector">
@@ -158,10 +182,26 @@
 
             <div class="toolbar-group">
               <span class="toolbar-label">Indicadores:</span>
-              <button class="toggle-pill active" id="toggleEma20">EMA 20</button>
-              <button class="toggle-pill active" id="toggleEma50">EMA 50</button>
-              <button class="toggle-pill" id="toggleRsi">RSI (14)</button>
-              <button class="toggle-pill" id="toggleBands">Bollinger</button>
+              <button class="toggle-pill active" id="toggleEma20" data-indicator="ema20">EMA 20</button>
+              <button class="toggle-pill active" id="toggleEma50" data-indicator="ema50">EMA 50</button>
+              <button class="toggle-pill" id="toggleRsi" data-indicator="rsi">RSI (14)</button>
+              <button class="toggle-pill" id="toggleBands" data-indicator="bands">Bollinger</button>
+              <button class="toggle-pill" id="toggleMacd" data-indicator="macd">MACD (12, 26, 9)</button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-group">
+              <span class="toolbar-label">Marcações:</span>
+              <button class="btn-mark-tool" id="btnOpenAddMarking" title="Adicionar Linha de Preço (Suporte / Resistência / Alvo) no Gráfico">
+                <i data-lucide="plus-circle"></i>
+                <span>+ Linha</span>
+              </button>
+              <button class="btn-mark-tool" id="btnManageMarkings" title="Gerenciar Linhas e Suportes Salvos">
+                <i data-lucide="bookmark"></i>
+                <span>Linhas</span>
+                <span class="markings-counter-badge" id="markingsCountBadge" style="display: none;">0</span>
+              </button>
             </div>
           </div>
 
@@ -170,6 +210,7 @@
               <span class="legend-item ema20-legend">EMA 20: <span id="valEma20">---</span></span>
               <span class="legend-item ema50-legend">EMA 50: <span id="valEma50">---</span></span>
               <span class="legend-item rsi-legend" id="legendRsi" style="display:none;">RSI: <span id="valRsi">---</span></span>
+              <span class="legend-item macd-legend" id="legendMacd" style="display:none;">MACD: <span id="valMacd">---</span> | Sinal: <span id="valMacdSignal">---</span> | Hist: <span id="valMacdHist">---</span></span>
             </div>
           </div>
         </div>
@@ -183,6 +224,29 @@
             </div>
           </div>
 
+          <!-- Resizable Draggable Splitter between Candlesticks and Volume -->
+          <div class="pane-splitter" id="volumeSplitter" title="Arraste para dimensionar a altura do Volume e Candles (ou duplo clique para alternar)">
+            <div class="splitter-handle"></div>
+            <div class="splitter-title">
+              <i data-lucide="bar-chart-2"></i>
+              <span>Volume (<span id="volAssetLabel">ETH</span>):</span>
+              <span class="splitter-live-vol font-mono" id="splitterLiveVol">---</span>
+            </div>
+            <div class="splitter-actions">
+              <button class="splitter-btn" id="btnToggleVolMode" title="Alternar entre Painel Separado e Sobreposto">
+                <i data-lucide="layers"></i> <span id="volModeText">Separado</span>
+              </button>
+              <button class="splitter-btn" id="btnResetVolHeight" title="Redefinir altura padrão (120px)">
+                <i data-lucide="rotate-ccw"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Volume Sub-chart Container (Separated & Draggable) -->
+          <div class="volume-chart-wrapper" id="volumeChartContainer" style="height: 120px;">
+            <div id="tvVolumeChart" style="height: 100%; width: 100%;"></div>
+          </div>
+
           <!-- RSI Sub-chart Container (Toggleable) -->
           <div class="rsi-chart-wrapper" id="rsiChartContainer" style="display: none;">
             <div class="rsi-chart-header">
@@ -190,6 +254,22 @@
               <span class="rsi-current-val" id="rsiSubVal">50.0</span>
             </div>
             <div id="tvRsiContainer" style="height: 120px; width: 100%;"></div>
+          </div>
+
+          <!-- MACD Sub-chart Container (Toggleable) -->
+          <div class="macd-chart-wrapper" id="macdChartContainer" style="display: none;">
+            <div class="macd-chart-header">
+              <div class="macd-header-title">
+                <i data-lucide="activity"></i>
+                <span>MACD (12, 26, 9)</span>
+              </div>
+              <div class="macd-header-vals font-mono" id="macdHeaderVals">
+                <span class="val-macd">MACD: <strong id="macdSubVal">0.00</strong></span>
+                <span class="val-signal">Sinal: <strong id="macdSubSignal">0.00</strong></span>
+                <span class="val-hist">Hist: <strong id="macdSubHist">0.00</strong></span>
+              </div>
+            </div>
+            <div id="tvMacdChart" style="height: 110px; width: 100%;"></div>
           </div>
 
           <!-- Historical Summary Bar -->
@@ -317,6 +397,158 @@
             </div>
           </div>
         </div>
+
+        <!-- VIEW 3: DEDICATED BINANCE FORMAT ORDER BOOK TAB -->
+        <div class="main-subview" id="orderBookMainView" style="display: none;">
+          <div class="binance-app-wrapper">
+            <div class="binance-app-container">
+              <!-- Top Ticker Bar: ETH/USDT, 2.688,01 -0,25% + Sub-nav Pills -->
+              <div class="binance-ticker-bar">
+                <div class="binance-ticker-left">
+                  <div class="binance-symbol-selector">
+                    <span class="binance-symbol-text" id="binanceSymbolTitle">ETH/USDT</span>
+                    <i data-lucide="chevron-down" class="binance-chevron"></i>
+                  </div>
+                  <div class="binance-price-row">
+                    <span class="binance-current-price font-mono" id="binanceCurrentPrice">---.--</span>
+                    <span class="binance-price-change font-mono" id="binancePriceChange">---%</span>
+                  </div>
+                </div>
+
+                <div class="binance-nav-pills" id="binanceNavPills">
+                  <button class="binance-pill active" id="pillLivro" data-subtab="livro">Livro</button>
+                  <button class="binance-pill" id="pillProfundidade" data-subtab="depth">Profundidade</button>
+                  <button class="binance-pill" id="pillTrades" data-subtab="trades">Trades</button>
+                </div>
+              </div>
+
+              <!-- SUBTAB 1: LIVRO DE OFERTAS (4 COLUNAS LADO A LADO) -->
+              <div class="binance-subview-content" id="binanceContentLivro">
+                <!-- Whale Intelligence & Institutional Wall Banner in Binance Book -->
+                <div class="binance-whale-radar-banner" id="binanceWhaleBanner">
+                  <div class="whale-banner-left">
+                    <span class="whale-radar-pulse"></span>
+                    <div class="whale-banner-title-box">
+                      <span class="whale-banner-title">
+                        <span class="whale-icon-badge">🐋 RADAR DE GRANDES ORDENS (BINANCE BOOK)</span>
+                      </span>
+                      <span class="whale-banner-subtitle">
+                        Identificação de paredes institucionais (≥ 10 ETH e ≥ 50 ETH) no livro de ofertas
+                      </span>
+                    </div>
+                  </div>
+                  <div class="whale-banner-stats" id="binanceBookWhaleStats">
+                    <span class="whale-stat-item bid"><span class="stat-dot green"></span> <strong id="binanceBidWhaleCount">0</strong> Paredes Compra</span>
+                    <span class="whale-stat-item ask"><span class="stat-dot red"></span> <strong id="binanceAskWhaleCount">0</strong> Paredes Venda</span>
+                    <button class="whale-info-btn-inline" id="btnExplainWhaleBook" title="Clique para entender como baleias são identificadas no book da Binance">
+                      <i data-lucide="help-circle"></i> <span>Como identificar?</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Imbalance / Ratio Bar: 40,81% vs 59,19% -->
+                <div class="binance-ratio-wrapper">
+                  <span class="binance-ratio-num green font-mono" id="binanceRatioBidPct">50,00%</span>
+                  <div class="binance-ratio-bar">
+                    <div class="binance-ratio-fill green" id="binanceRatioBidFill" style="width: 50%;"></div>
+                    <div class="binance-ratio-divider"></div>
+                    <div class="binance-ratio-fill red" id="binanceRatioAskFill" style="width: 50%;"></div>
+                  </div>
+                  <span class="binance-ratio-num red font-mono" id="binanceRatioAskPct">50,00%</span>
+                </div>
+
+                <!-- Symmetrical 4-Column Header: Oferta Compra | Preço Compra || Preço Venda | Oferta Venda -->
+                <div class="binance-columns-header">
+                  <div class="binance-header-half bid-half-header">
+                    <span class="header-col-title">Oferta Compra</span>
+                    <span class="header-col-title">Preço Compra (USDT)</span>
+                  </div>
+                  <div class="binance-header-half ask-half-header">
+                    <span class="header-col-title">Preço Venda (USDT)</span>
+                    <div class="header-step-group">
+                      <span class="header-col-title">Oferta Venda</span>
+                      <div class="binance-step-box">
+                        <select id="binanceStepSelect" class="binance-step-select font-mono" title="Agrupamento de Preço">
+                          <option value="0.01">0.01</option>
+                          <option value="0.1">0.1</option>
+                          <option value="1">1</option>
+                          <option value="10" selected>10</option>
+                          <option value="50">50</option>
+                          <option value="100">100</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Scrollable Rows Container (Binance 4-column layout) -->
+                <div class="binance-ladder-body" id="binanceLadderBody">
+                  <!-- Rows injected here in real-time -->
+                </div>
+              </div>
+
+              <!-- SUBTAB 2: PROFUNDIDADE (GRÁFICO DE PROFUNDIDADE DE MERCADO) -->
+              <div class="binance-subview-content" id="binanceContentDepth" style="display: none;">
+                <div class="binance-depth-stats-bar">
+                  <div class="depth-stat-item">
+                    <span class="depth-stat-label">Preço Médio:</span>
+                    <span class="depth-stat-val font-mono" id="binanceDepthMidPrice">---</span>
+                  </div>
+                  <div class="depth-stat-item">
+                    <span class="depth-stat-label">Profundidade Compra:</span>
+                    <span class="depth-stat-val green font-mono" id="binanceDepthTotalBids">--- ETH</span>
+                  </div>
+                  <div class="depth-stat-item">
+                    <span class="depth-stat-label">Profundidade Venda:</span>
+                    <span class="depth-stat-val red font-mono" id="binanceDepthTotalAsks">--- ETH</span>
+                  </div>
+                  <div class="depth-stat-item">
+                    <span class="depth-stat-label">Spread:</span>
+                    <span class="depth-stat-val font-mono" id="binanceDepthSpread">---</span>
+                  </div>
+                </div>
+
+                <div class="binance-depth-canvas-wrapper" id="binanceDepthCanvasWrapper">
+                  <canvas id="binanceDepthCanvas"></canvas>
+                  <div class="binance-depth-tooltip" id="binanceDepthTooltip" style="display: none;"></div>
+                </div>
+              </div>
+
+              <!-- SUBTAB 3: TRADES AO VIVO (NEGOCIAÇÕES EM TEMPO REAL) -->
+              <div class="binance-subview-content" id="binanceContentTrades" style="display: none;">
+                <div class="binance-trades-stats-bar">
+                  <div class="trades-stat-pill">
+                    <span>Vol Compra Recente:</span>
+                    <strong class="green font-mono" id="binanceTradesBuyVol">0.00 ETH</strong>
+                  </div>
+                  <div class="trades-stat-pill">
+                    <span>Vol Venda Recente:</span>
+                    <strong class="red font-mono" id="binanceTradesSellVol">0.00 ETH</strong>
+                  </div>
+                  <div class="trades-stat-pill">
+                    <span>Grandes Ordens (Baleias):</span>
+                    <strong class="gold font-mono" id="binanceTradesWhaleCount">0</strong>
+                  </div>
+                </div>
+
+                <div class="binance-trades-header">
+                  <span class="trades-th col-time">Horário</span>
+                  <span class="trades-th col-price">Preço (USDT)</span>
+                  <span class="trades-th col-qty">Quantidade (ETH)</span>
+                  <span class="trades-th col-total">Total (USDT)</span>
+                  <span class="trades-th col-side">Tipo</span>
+                </div>
+
+                <div class="binance-trades-body" id="binanceTradesBody">
+                  <div class="tape-empty-msg">
+                    <span>⚡ Conectando ao fluxo de negociações em tempo real...</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- RIGHT: ORDER BOOK & RECENT TRADES SECTION -->
@@ -346,10 +578,26 @@
 
         <!-- TAB CONTENT 1: ORDER BOOK -->
         <div class="tab-pane active" id="paneOrderBook">
-          <!-- Whale Wall Radar in Order Book -->
+          <!-- Sidebar Order Book Header & Quick Expand Button -->
+          <div class="ob-sidebar-actions">
+            <button class="ob-expand-btn" id="btnExpandOrderBook" title="Abrir Order Book com ordens lado a lado na tela principal">
+              <i data-lucide="maximize-2"></i> <span>Abrir Aba Lado a Lado</span>
+            </button>
+          </div>
+
+          <!-- Whale Wall Radar & Quick Grouping in Order Book -->
           <div class="ob-whale-radar" id="obWhaleRadar">
-            <span class="ob-whale-radar-title"><i data-lucide="shield-alert"></i> Radar de Paredes:</span>
-            <span class="ob-whale-radar-status font-mono" id="obWhaleRadarStatus">Monitorando book...</span>
+            <div class="ob-radar-left">
+              <span class="ob-whale-radar-title"><i data-lucide="shield-alert"></i> Radar:</span>
+              <span class="ob-whale-radar-status font-mono" id="obWhaleRadarStatus">Monitorando book...</span>
+            </div>
+            <div class="ob-tick-pills" id="obTickPills" title="Agrupamento rápido do Order Book">
+              <button class="ob-tick-btn" data-step="0.01">0.01</button>
+              <button class="ob-tick-btn" data-step="0.1">0.1</button>
+              <button class="ob-tick-btn active" data-step="10">10</button>
+              <button class="ob-tick-btn" data-step="50">50</button>
+              <button class="ob-tick-btn" data-step="100">100</button>
+            </div>
           </div>
 
           <div class="orderbook-header">
@@ -363,14 +611,27 @@
             <!-- Dynamic Asks -->
           </div>
 
-          <!-- Spread Display -->
+          <!-- Spread Display & Editable Grouping Control -->
           <div class="orderbook-spread" id="spreadDisplay">
             <div class="spread-left">
               <span class="spread-price font-mono" id="spreadPrice">---.--</span>
               <span class="spread-indicator" id="spreadArrow">▲</span>
             </div>
             <div class="spread-right">
-              <span>Spread: <strong id="spreadValue" class="font-mono">0.01 (0.00%)</strong></span>
+              <span class="spread-label">Spread:</span>
+              <div class="spread-control-wrapper">
+                <select id="spreadStepSelect" class="spread-step-select font-mono" title="Selecione ou edite o agrupamento de spread">
+                  <option value="0.01">0.01</option>
+                  <option value="0.1">0.1</option>
+                  <option value="1">1.0</option>
+                  <option value="10" selected>10</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="custom">✏️ Outro...</option>
+                </select>
+                <input type="number" id="spreadStepCustom" class="spread-custom-input font-mono" step="any" min="0.0001" placeholder="Valor" style="display: none;" />
+              </div>
+              <strong id="spreadValue" class="spread-value-text font-mono">10.00 (0.370%)</strong>
             </div>
           </div>
 
@@ -510,6 +771,22 @@
                   <span>VWAP Estimado:</span>
                   <span class="font-mono" id="cardVwap">---</span>
                 </div>
+                <div class="metric-row">
+                  <span>MACD (12, 26):</span>
+                  <span class="font-mono font-bold blue" id="cardMacd">---</span>
+                </div>
+                <div class="metric-row">
+                  <span>Sinal MACD (9):</span>
+                  <span class="font-mono orange" id="cardMacdSignal">---</span>
+                </div>
+                <div class="metric-row">
+                  <span>Histograma MACD:</span>
+                  <span class="font-mono" id="cardMacdHist">---</span>
+                </div>
+                <div class="metric-row">
+                  <span>Momentum MACD:</span>
+                  <span class="badge" id="cardMacdStatusBadge">Neutro</span>
+                </div>
               </div>
             </div>
 
@@ -616,6 +893,9 @@
                 <li><span class="http-badge get">GET</span> <code>/api/indicators/&lt;symbol&gt;</code></li>
                 <li><span class="http-badge get">GET</span> <code>/api/whales</code></li>
                 <li><span class="http-badge get">GET</span> <code>/api/whales/quota</code></li>
+                <li><span class="http-badge get">GET</span> <code>/api/settings</code></li>
+                <li><span class="http-badge post">POST</span> <code>/api/settings</code></li>
+                <li><span class="http-badge post">POST</span> <code>/api/settings/reset</code></li>
                 <li><span class="http-badge get">GET</span> <code>/api/export/&lt;symbol&gt;</code></li>
                 <li><span class="http-badge get">GET</span> <code>/dev/version</code></li>
               </ul>
@@ -640,16 +920,87 @@
     </footer>
   </div>
 
-  <!-- Modular Frontend Architecture -->
-  <script src="{{ url_for('static', filename='js/state.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/indicators.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/orderbook.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/tapereading.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/whales.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/websocket.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <!-- MODAL: GERENCIADOR DE MARCAÇÕES (SUPORTES E RESISTÊNCIAS) -->
+  <div class="modal-backdrop" id="modalMarkingsBackdrop" style="display: none;">
+    <div class="modal-dialog markings-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i data-lucide="bookmark"></i>
+          <span>Marcações de Preço (Suportes e Resistências)</span>
+        </div>
+        <button class="modal-close" id="btnCloseMarkingsModal" title="Fechar">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Formulário de Adicionar Nova Linha -->
+        <div class="markings-add-card">
+          <h5>Adicionar Linha Horizontal no Gráfico</h5>
+          <div class="markings-form-grid">
+            <div class="form-field price-field">
+              <label for="inputMarkingPrice">Preço (USDT):</label>
+              <div class="input-with-action">
+                <input type="number" id="inputMarkingPrice" step="0.01" placeholder="Ex: 2650.00" />
+                <button type="button" class="btn-live-fill" id="btnUseLivePrice" title="Preencher com o preço atual negociado">Preço Atual</button>
+              </div>
+            </div>
+
+            <div class="form-field label-field">
+              <label for="inputMarkingLabel">Rótulo / Descrição:</label>
+              <input type="text" id="inputMarkingLabel" placeholder="Ex: Suporte Relevante / Topo" maxlength="35" />
+            </div>
+
+            <div class="form-field color-field">
+              <label>Cor da Linha:</label>
+              <div class="color-picker-presets" id="markingColorPresets">
+                <button type="button" class="color-preset-btn active" data-color="#0ecb81" style="background-color: #0ecb81;" title="Verde (Suporte/Compra)"></button>
+                <button type="button" class="color-preset-btn" data-color="#f6465d" style="background-color: #f6465d;" title="Vermelho (Resistência/Venda)"></button>
+                <button type="button" class="color-preset-btn" data-color="#f0b90b" style="background-color: #f0b90b;" title="Dourado (Alvo/Atenção)"></button>
+                <button type="button" class="color-preset-btn" data-color="#00d2ff" style="background-color: #00d2ff;" title="Ciano (Liquidez)"></button>
+                <button type="button" class="color-preset-btn" data-color="#9945ff" style="background-color: #9945ff;" title="Roxo (Institucional)"></button>
+              </div>
+            </div>
+
+            <div class="form-field action-field">
+              <label>&nbsp;</label>
+              <button type="button" class="btn btn-primary btn-add-marking" id="btnConfirmAddMarking">
+                <i data-lucide="plus"></i> <span>Criar Linha</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Marcações Ativas -->
+        <div class="markings-list-section">
+          <div class="markings-list-header">
+            <span>Marcações Ativas no Gráfico (<span id="modalMarkingsCount">0</span>)</span>
+            <button type="button" class="btn-clear-markings" id="btnClearAllMarkings">Limpar Todas</button>
+          </div>
+          <div class="markings-table-container">
+            <div class="markings-list" id="markingsListContainer">
+              <!-- Gerado dinamicamente via JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-note">
+          <i data-lucide="save"></i>
+          <span>Todas as alterações em gráficos, spreads, marcações e indicadores são salvas automaticamente no arquivo <code>terminal_layout.json</code> no diretório raiz do projeto.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modular Frontend Architecture with Cache-Busting -->
+  <script src="{{ url_for('static', filename='js/state.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/utils.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/storage.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/indicators.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/chart.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/orderbook.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/tapereading.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/whales.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/websocket.js') }}?v={{ version }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v={{ version }}"></script>
   <script>
     // Initialize Lucide Icons
     lucide.createIcons();

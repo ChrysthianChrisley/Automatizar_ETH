@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Análise & Volatilidade Histórica | Binance Terminal ETH & BTC</title>
+  <meta name="description" content="Módulo de análise quantitativa e estatística de volatilidade por período (manhã, tarde e noite) para candles históricos de Ethereum (ETH) e Bitcoin (BTC).">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <!-- Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js para gráficos estatísticos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- CSS Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ version }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/data_analise.css') }}?v={{ version }}">
+</head>
+<body>
+  <div class="analysis-container">
+    <!-- HEADER -->
+    <header class="analysis-header">
+      <div class="analysis-brand">
+        <div class="analysis-brand-icon">
+          <i data-lucide="bar-chart-2"></i>
+        </div>
+        <div class="analysis-brand-text">
+          <div class="analysis-brand-title">
+            <span>DATA ANÁLISE</span>
+            <span class="badge-tag">QUANTITATIVO & VOLATILIDADE</span>
+          </div>
+          <div class="analysis-brand-subtitle">
+            Estudo de Volatilidade Intraday & Sazonalidade (Manhã, Tarde, Noite e Madrugada)
+          </div>
+        </div>
+      </div>
+
+      <div class="analysis-header-actions">
+        <label for="csvFileInput" class="btn btn-secondary" style="cursor: pointer;" title="Analisar a partir de um arquivo CSV local">
+          <i data-lucide="upload"></i>
+          <span>Importar CSV</span>
+          <input type="file" id="csvFileInput" accept=".csv" style="display: none;" />
+        </label>
+        <a href="/" class="btn btn-secondary" id="btnBackToTerminal" title="Voltar ao Terminal em Tempo Real">
+          <i data-lucide="arrow-left"></i>
+          <span>Voltar ao Terminal</span>
+        </a>
+        <button class="btn btn-secondary" id="btnExportCSV" title="Exportar Relatório e Estatísticas em CSV">
+          <i data-lucide="download"></i>
+          <span>Exportar CSV</span>
+        </button>
+        <button class="btn btn-secondary" id="btnExportJSON" title="Exportar Dados em JSON">
+          <i data-lucide="file-json"></i>
+          <span>JSON</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- PAINEL DE CONTROLE E FILTROS -->
+    <section class="filter-panel">
+      <div class="filter-group">
+        <!-- Par -->
+        <div class="filter-item">
+          <label class="filter-label" for="symbolSelect">Ativo / Par</label>
+          <select id="symbolSelect" class="filter-select">
+            <option value="ETHUSDT" selected>ETH/USDT (Ethereum)</option>
+            <option value="BTCUSDT">BTC/USDT (Bitcoin)</option>
+            <option value="SOLUSDT">SOL/USDT (Solana)</option>
+            <option value="BNBUSDT">BNB/USDT (Binance Coin)</option>
+            <option value="ETHBTC">ETH/BTC (Par Cruzado)</option>
+          </select>
+        </div>
+
+        <!-- Timeframe / Intervalo -->
+        <div class="filter-item">
+          <label class="filter-label" for="intervalSelect">Timeframe (Candle)</label>
+          <select id="intervalSelect" class="filter-select">
+            <option value="15m">15 minutos (15m)</option>
+            <option value="30m">30 minutos (30m)</option>
+            <option value="1h" selected>1 hora (1h) - Recomendado</option>
+            <option value="2h">2 horas (2h)</option>
+            <option value="4h">4 horas (4h)</option>
+            <option value="1d">1 dia (1d)</option>
+          </select>
+        </div>
+
+        <!-- Presets Rápidos -->
+        <div class="filter-item">
+          <label class="filter-label">Período Histórico</label>
+          <div class="preset-buttons">
+            <button type="button" class="preset-btn active" data-preset="2y">2 Anos</button>
+            <button type="button" class="preset-btn" data-preset="1y">1 Ano</button>
+            <button type="button" class="preset-btn" data-preset="6m">6 Meses</button>
+            <button type="button" class="preset-btn" data-preset="3m">3 Meses</button>
+          </div>
+        </div>
+
+        <!-- Datas Ajustáveis -->
+        <div class="filter-item">
+          <label class="filter-label" for="startDateInput">Data Inicial</label>
+          <input type="date" id="startDateInput" class="filter-input" />
+        </div>
+
+        <div class="filter-item">
+          <label class="filter-label" for="endDateInput">Data Final</label>
+          <input type="date" id="endDateInput" class="filter-input" />
+        </div>
+
+        <!-- Fuso Horário -->
+        <div class="filter-item">
+          <label class="filter-label" for="tzSelect">Fuso Horário</label>
+          <select id="tzSelect" class="filter-select">
+            <option value="-3" selected>Horário de Brasília (UTC-3)</option>
+            <option value="0">UTC (Global / Greenwich)</option>
+            <option value="-4">Nova York / EDT (UTC-4)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Botão Executar -->
+      <button type="button" class="btn-run-analysis" id="btnRunAnalysis">
+        <i data-lucide="play"></i>
+        <span>Executar Análise (API Binance)</span>
+      </button>
+    </section>
+
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-text">Processando Análise Histórica Quantitativa...</div>
+      <div class="loading-subtext" id="loadingSubtext">Baixando candles diretamente da Binance e calculando volatilidade...</div>
+    </div>
+
+    <!-- WORKSPACE PRINCIPAL -->
+    <main class="analysis-workspace">
+      <!-- 1. Executive Insight Banner -->
+      <div class="insight-card" id="executiveInsight">
+        <div class="insight-icon">
+          <i data-lucide="loader"></i>
+        </div>
+        <div class="insight-content">
+          <div class="insight-title">Carregando dados históricos...</div>
+          <div class="insight-text">Conectando aos endpoints da Binance e compilando histórico de 2 anos...</div>
+        </div>
+      </div>
+
+      <!-- 1.1 DUELO DIRETO: MANHÃ vs TARDE (Conforme especificação do Prompt) -->
+      <section class="h2h-card" id="directComparisonCard">
+        <!-- Renderizado dinamicamente via JS -->
+      </section>
+
+      <!-- 2. KPI Scorecards -->
+      <div class="kpi-grid" id="kpiCards">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+
+      <!-- 3. Cards Comparativos dos 4 Períodos -->
+      <div class="periods-grid" id="periodCards">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+
+      <!-- 4. Gráficos Comparativos -->
+      <div class="charts-grid-2">
+        <!-- Gráfico 1: Comparativo dos Períodos -->
+        <div class="chart-box">
+          <div class="chart-box-header">
+            <div>
+              <div class="chart-box-title">
+                <i data-lucide="bar-chart"></i>
+                <span>Volatilidade Média por Período</span>
+              </div>
+              <div class="chart-box-subtitle">Amplitude percentual média ((Máxima - Mínima) / Mínima) de cada candle</div>
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="chartPeriods"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 2: Curva das 24 Horas do Dia -->
+        <div class="chart-box">
+          <div class="chart-box-header">
+            <div>
+              <div class="chart-box-title">
+                <i data-lucide="activity"></i>
+                <span>Curva de Volatilidade Intraday (00h às 23h)</span>
+              </div>
+              <div class="chart-box-subtitle">Oscilação média para cada hora do dia no fuso horário configurado</div>
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="chartHours"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Gráfico de Dias da Semana -->
+      <div class="chart-box">
+        <div class="chart-box-header">
+          <div>
+            <div class="chart-box-title">
+              <i data-lucide="calendar"></i>
+              <span>Volatilidade por Dia da Semana (Segunda a Domingo)</span>
+            </div>
+            <div class="chart-box-subtitle">Comparativo de atividade entre dias úteis e finais de semana</div>
+          </div>
+        </div>
+        <div class="chart-canvas-container" style="height: 260px;">
+          <canvas id="chartWeekdays"></canvas>
+        </div>
+      </div>
+
+      <!-- 6. Heatmap Interativo (7 Dias x 24 Horas) -->
+      <div class="chart-box">
+        <div class="chart-box-header">
+          <div>
+            <div class="chart-box-title">
+              <i data-lucide="grid"></i>
+              <span>Heatmap de Volatilidade (Dia da Semana × Hora do Dia)</span>
+            </div>
+            <div class="chart-box-subtitle">Mapa de calor mostrando os blocos mais ativos (azul = calmo, amarelo = moderado, vermelho = pico)</div>
+          </div>
+        </div>
+        <div class="heatmap-container" id="heatmapContainer">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+
+      <!-- 7. Tabela Comparativa Detalhada -->
+      <div class="table-card">
+        <div class="chart-box-header">
+          <div>
+            <div class="chart-box-title">
+              <i data-lucide="table"></i>
+              <span>Resumo Quantitativo por Período</span>
+            </div>
+            <div class="chart-box-subtitle">Métricas estatísticas completas consolidadas sobre toda a amostra</div>
+          </div>
+        </div>
+        <div class="data-table-wrap">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Período</th>
+                <th>Faixa Horária</th>
+                <th>Candles Analisados</th>
+                <th>Volatilidade Média</th>
+                <th>Mediana</th>
+                <th>Desvio Padrão</th>
+                <th>Maior Spike</th>
+                <th>Volume Total (USDT)</th>
+                <th>Win Rate (Alta)</th>
+                <th>Retorno Médio</th>
+              </tr>
+            </thead>
+            <tbody id="summaryTableBody">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 8. Top 10 Maiores Spikes Históricos -->
+      <div class="table-card">
+        <div class="chart-box-header">
+          <div>
+            <div class="chart-box-title">
+              <i data-lucide="zap"></i>
+              <span>Top 10 Maiores Movimentos Históricos (Spikes de Volatilidade)</span>
+            </div>
+            <div class="chart-box-subtitle">Os candles com maior amplitude percentual em todo o período histórico selecionado</div>
+          </div>
+        </div>
+        <div class="data-table-wrap">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Ranking</th>
+                <th>Data / Hora Local</th>
+                <th>Abertura</th>
+                <th>Máxima</th>
+                <th>Mínima</th>
+                <th>Fechamento</th>
+                <th>Amplitude (%)</th>
+                <th>Amplitude ($)</th>
+                <th>Volume (USDT)</th>
+                <th>Sentido</th>
+              </tr>
+            </thead>
+            <tbody id="topSpikesBody">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Script Frontend Modular -->
+  <script src="{{ url_for('static', filename='js/data_analise.js') }}?v={{ version }}"></script>
+</body>
+</html>

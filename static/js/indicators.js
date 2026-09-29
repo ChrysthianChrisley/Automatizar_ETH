@@ -70,3 +70,41 @@ function calculateRSI(values, period = 14) {
 
   return rsi;
 }
+
+// Moving Average Convergence Divergence (MACD)
+function calculateMACD(values, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+  const emaFast = calculateEMA(values, fastPeriod);
+  const emaSlow = calculateEMA(values, slowPeriod);
+  const macdLine = new Array(values.length).fill(NaN);
+
+  for (let i = 0; i < values.length; i++) {
+    if (!isNaN(emaFast[i]) && !isNaN(emaSlow[i])) {
+      macdLine[i] = emaFast[i] - emaSlow[i];
+    }
+  }
+
+  // Extract valid MACD indices and values
+  const validEntries = [];
+  for (let i = 0; i < macdLine.length; i++) {
+    if (!isNaN(macdLine[i])) {
+      validEntries.push({ idx: i, val: macdLine[i] });
+    }
+  }
+
+  const signalLine = new Array(values.length).fill(NaN);
+  const histogram = new Array(values.length).fill(NaN);
+
+  if (validEntries.length >= signalPeriod) {
+    const vals = validEntries.map(e => e.val);
+    const sigEma = calculateEMA(vals, signalPeriod);
+    for (let k = 0; k < sigEma.length; k++) {
+      if (!isNaN(sigEma[k])) {
+        const origIdx = validEntries[k].idx;
+        signalLine[origIdx] = sigEma[k];
+        histogram[origIdx] = macdLine[origIdx] - sigEma[k];
+      }
+    }
+  }
+
+  return { macdLine, signalLine, histogram };
+}

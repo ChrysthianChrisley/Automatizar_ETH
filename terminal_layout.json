@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-09-26T20:00:47Z",
+  "chart": {
+    "symbol": "ETHUSDT",
+    "interval": "15m",
+    "isVolumeSeparated": true,
+    "volumeHeight": 135
+  },
+  "spreads": {
+    "orderBookGrouping": 0.01,
+    "obProDepthRows": 25,
+    "binanceActiveSubtab": "livro"
+  },
+  "indicators": {
+    "showEma20": false,
+    "showEma50": false,
+    "showRsi": false,
+    "showBands": false,
+    "showMacd": false
+  },
+  "views": {
+    "activeMainView": "chart",
+    "activeSideTab": "orderbook",
+    "whaleSubview": "holders",
+    "tapeSizeFilter": "all",
+    "tapeSideFilter": "all"
+  },
+  "markings": [
+    {
+      "color": "#f6465d",
+      "id": "mark_test_1",
+      "label": "Resistência Forte",
+      "lineStyle": 0,
+      "lineWidth": 2,
+      "price": 2750
+    },
+    {
+      "color": "#0ecb81",
+      "id": "mark_test_2",
+      "label": "Suporte Comprador",
+      "lineStyle": 0,
+      "lineWidth": 2,
+      "price": 2620
+    }
+  ]
+}

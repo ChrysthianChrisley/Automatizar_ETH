@@ -33,13 +33,21 @@ function formatCompactNumber(num) {
 
 // Update Base Asset Labels throughout the UI
 function updateBaseAssetLabel(symbol) {
-  if (symbol.startsWith('ETH')) el.baseAssetLabel.textContent = 'ETH';
-  else if (symbol.startsWith('BTC')) el.baseAssetLabel.textContent = 'BTC';
-  else if (symbol.startsWith('SOL')) el.baseAssetLabel.textContent = 'SOL';
-  else el.baseAssetLabel.textContent = 'Crypto';
+  let asset = 'ETH';
+  if (symbol.startsWith('ETH')) asset = 'ETH';
+  else if (symbol.startsWith('BTC')) asset = 'BTC';
+  else if (symbol.startsWith('SOL')) asset = 'SOL';
+  else asset = 'Crypto';
 
-  if (symbol.endsWith('BTC')) el.priceCurrency.textContent = 'BTC';
-  else el.priceCurrency.textContent = 'USDT';
+  if (el.baseAssetLabel) el.baseAssetLabel.textContent = asset;
+  const volAsset = el.volAssetLabel || document.getElementById('volAssetLabel');
+  if (volAsset) volAsset.textContent = asset;
+
+  if (symbol.endsWith('BTC')) {
+    if (el.priceCurrency) el.priceCurrency.textContent = 'BTC';
+  } else {
+    if (el.priceCurrency) el.priceCurrency.textContent = 'USDT';
+  }
 }
 
 // Set WebSocket Connection Status in Header
@@ -120,4 +128,158 @@ function exportToCSV() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ==========================================================================
+// UNIVERSAL FLOATING TOOLTIP & EXPLANATION BALLOONS ENGINE
+// ==========================================================================
+
+let globalTooltipEl = null;
+
+// Indicator Knowledge Base
+const INDICATOR_EXPLANATIONS = {
+  ema20: {
+    title: 'EMA 20 (Média Móvel Exponencial)',
+    badge: 'Momentum Rápido',
+    badgeClass: 'yellow',
+    formula: 'EMA = (Fechamento * k) + (EMA anterior * (1 - k)), onde k = 2 / (20 + 1)',
+    summary: 'Atribui peso exponencial aos preços mais recentes. Reage rápido a mudanças de curto prazo.',
+    interpretation: '• Preço acima da EMA 20: Momentum comprador imediato ativo.<br>• Preço abaixo da EMA 20: Correção ou fraqueza de curto prazo.<br>• Serve como suporte e resistência dinâmico em tendências fortes.',
+  },
+  ema50: {
+    title: 'EMA 50 (Média Móvel Exponencial)',
+    badge: 'Tendência Principal',
+    badgeClass: 'cyan',
+    formula: 'Média exponencial calculada sobre os últimos 50 candles.',
+    summary: 'Define a direção dominante do mercado no médio prazo e filtra ruídos.',
+    interpretation: '• <strong>Bullish</strong>: Preço negociando acima da EMA 50.<br>• <strong>Bearish</strong>: Preço negociando abaixo da EMA 50.<br>• <strong>Golden Cross</strong>: EMA 20 cruzando para cima da EMA 50 indica início de rali de alta.',
+  },
+  rsi: {
+    title: 'RSI (Relative Strength Index 14)',
+    badge: 'Oscilador de Momentum',
+    badgeClass: 'purple',
+    formula: 'RSI = 100 - (100 / (1 + Média Ganhos / Média Perdas))',
+    summary: 'Mede a velocidade e a magnitude dos movimentos de preço em uma escala de 0 a 100.',
+    interpretation: '• <strong>Sobrecompra (> 70)</strong>: Ativo subiu demais rápido, risco iminente de correção.<br>• <strong>Sobrevenda (< 30)</strong>: Ativo excessivamente vendido, chance de repique comprador.<br>• <strong>Zona Neutra (40-60)</strong>: Mercado em equilíbrio ou consolidação.',
+  },
+  bands: {
+    title: 'Bandas de Bollinger (20 períodos, 2 Desvios)',
+    badge: 'Volatilidade Estatística',
+    badgeClass: 'purple',
+    formula: 'Média SMA 20 ± (2 * Desvio Padrão dos preços)',
+    summary: 'Envolve o preço em um canal de probabilidade estatística de 95,4%.',
+    interpretation: '• <strong>Squeeze (Estreitamento)</strong>: Baixa volatilidade que antecipa rompimentos explosivos.<br>• <strong>Toque na Banda Superior</strong>: Preço esticado na ponta compradora.<br>• <strong>Toque na Banda Inferior</strong>: Preço em suporte estatístico de sobrevenda.',
+  },
+  macd: {
+    title: 'MACD (Moving Average Convergence Divergence 12, 26, 9)',
+    badge: 'Tendência & Momentum',
+    badgeClass: 'blue',
+    formula: 'Linha MACD = EMA(12) - EMA(26) | Linha de Sinal = EMA(9) do MACD | Histograma = MACD - Sinal',
+    summary: 'Um dos osciladores mais respeitados no mundo. Rastreia o início e a força de novas tendências.',
+    interpretation: '• <strong>Cruzamento de Alta (🟢 Compra)</strong>: Linha MACD cruza acima da Linha de Sinal.<br>• <strong>Cruzamento de Baixa (🔴 Venda)</strong>: Linha MACD cruza abaixo da Linha de Sinal.<br>• <strong>Histograma Crescente</strong>: Aceleração da força da tendência.',
+  },
+  vwap: {
+    title: 'VWAP Estimado (Volume-Weighted Average Price)',
+    badge: 'Referência Institucional',
+    badgeClass: 'green',
+    formula: '∑ (Preço Médio do Candle * Volume) / ∑ Volume Total da Sessão',
+    summary: 'Preço médio ponderado pelo volume. O principal benchmark de mesas institucionais e fundos.',
+    interpretation: '• Instituições compram quando o preço está <strong>abaixo do VWAP</strong> (comprando barato).<br>• Compras <strong>acima do VWAP</strong> indicam urgência compradora agressiva.',
+  },
+};
+
+function initGlobalTooltip() {
+  if (globalTooltipEl) return;
+  globalTooltipEl = document.createElement('div');
+  globalTooltipEl.id = 'appFloatingTooltip';
+  globalTooltipEl.className = 'app-floating-tooltip';
+  globalTooltipEl.style.display = 'none';
+  document.body.appendChild(globalTooltipEl);
+
+  // Close on Escape or scroll
+  window.addEventListener('scroll', hideAppTooltip, true);
+}
+
+function showAppTooltip({ targetEl, event, title, subtitle, badgeText, badgeClass = '', bodyHtml = '', footerHtml = '' }) {
+  if (!globalTooltipEl) initGlobalTooltip();
+
+  globalTooltipEl.innerHTML = `
+    <div class="app-tooltip-header">
+      <div class="app-tooltip-title-wrap">
+        <span class="app-tooltip-title">${title}</span>
+        ${subtitle ? `<span class="app-tooltip-subtitle">${subtitle}</span>` : ''}
+      </div>
+      ${badgeText ? `<span class="app-tooltip-badge ${badgeClass}">${badgeText}</span>` : ''}
+    </div>
+    ${bodyHtml ? `<div class="app-tooltip-body">${bodyHtml}</div>` : ''}
+    ${footerHtml ? `<div class="app-tooltip-footer">${footerHtml}</div>` : ''}
+  `;
+
+  globalTooltipEl.style.display = 'block';
+
+  // Calculate best position
+  const rect = targetEl ? targetEl.getBoundingClientRect() : null;
+  const tipRect = globalTooltipEl.getBoundingClientRect();
+  const pad = 12;
+
+  let left = event ? event.clientX + 14 : rect.left + rect.width / 2 - tipRect.width / 2;
+  let top = event ? event.clientY + 14 : rect.bottom + 8;
+
+  // Boundary checks
+  if (left + tipRect.width > window.innerWidth - pad) {
+    left = window.innerWidth - tipRect.width - pad;
+  }
+  if (left < pad) left = pad;
+
+  if (top + tipRect.height > window.innerHeight - pad) {
+    if (rect) {
+      top = rect.top - tipRect.height - 8;
+    } else {
+      top = event.clientY - tipRect.height - 14;
+    }
+  }
+  if (top < pad) top = pad;
+
+  globalTooltipEl.style.left = `${Math.round(left)}px`;
+  globalTooltipEl.style.top = `${Math.round(top)}px`;
+}
+
+function hideAppTooltip() {
+  if (globalTooltipEl) {
+    globalTooltipEl.style.display = 'none';
+  }
+}
+
+// Bind tooltips to indicator buttons
+function bindIndicatorTooltips() {
+  const indicatorButtons = document.querySelectorAll('.toggle-pill[data-indicator]');
+  indicatorButtons.forEach(btn => {
+    const key = btn.dataset.indicator;
+    const info = INDICATOR_EXPLANATIONS[key];
+    if (!info) return;
+
+    btn.addEventListener('mouseenter', (e) => {
+      showAppTooltip({
+        targetEl: btn,
+        event: e,
+        title: info.title,
+        badgeText: info.badge,
+        badgeClass: info.badgeClass,
+        bodyHtml: `
+          <div class="tooltip-summary">${info.summary}</div>
+          <div class="tooltip-formula"><code>${info.formula}</code></div>
+          <div class="tooltip-interp">${info.interpretation}</div>
+        `,
+        footerHtml: '<span class="tooltip-hint">Clique para ligar / desligar no gráfico</span>',
+      });
+    });
+
+    btn.addEventListener('mousemove', (e) => {
+      if (globalTooltipEl && globalTooltipEl.style.display !== 'none') {
+        // slightly track mouse if outside target
+      }
+    });
+
+    btn.addEventListener('mouseleave', hideAppTooltip);
+  });
 }

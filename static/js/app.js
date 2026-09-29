@@ -4,10 +4,29 @@
  */
 
 // Application Bootstrap
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (window.lucide) {
+    try { lucide.createIcons(); } catch (e) { console.warn('Lucide init warning', e); }
+  }
   initDOMElements();
   initChart();
+
+  // 1. Instantly apply cached local settings before event listeners or fetch
+  if (typeof applyLocalSettingsImmediately === 'function') {
+    applyLocalSettingsImmediately();
+  }
+
   setupEventListeners();
+
+  if (typeof initMarkingsUI === 'function') {
+    initMarkingsUI();
+  }
+
+  // 2. Fetch and apply latest persistent settings from terminal_layout.json
+  if (typeof loadAndApplyLayoutSettings === 'function') {
+    await loadAndApplyLayoutSettings();
+  }
+
   loadSymbolData(currentSymbol, currentInterval);
   startClock();
   setupLiveReload();
@@ -35,7 +54,7 @@ async function loadSymbolData(symbol, interval) {
     const [klinesRes, tickerRes, depthRes, tradesRes] = await Promise.all([
       fetchBinance(`/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${CONFIG.candleLimit}`),
       fetchBinance(`/api/v3/ticker/24hr?symbol=${symbol}`),
-      fetchBinance(`/api/v3/depth?symbol=${symbol}&limit=15`),
+      fetchBinance(`/api/v3/depth?symbol=${symbol}&limit=50`),
       fetchBinance(`/api/v3/trades?symbol=${symbol}&limit=25`),
     ]);
 
@@ -101,6 +120,22 @@ function renderTrades(trades) {
   if (tapeState.recentTrades.length === 0 && trades.length > 0) {
     seedTapeFromRest(trades);
   }
+
+  // Seed Binance Dedicated Trades Tab
+  if (Array.isArray(trades)) {
+    binanceRecentTrades = [];
+    trades.slice(-50).forEach(t => {
+      if (typeof addBinanceLiveTrade === 'function') {
+        addBinanceLiveTrade({
+          p: t.price,
+          q: t.qty,
+          T: t.time,
+          m: t.isBuyerMaker,
+          id: t.id
+        });
+      }
+    });
+  }
 }
 
 // Render 24h Ticker Stats
@@ -146,6 +181,8 @@ function renderTicker24h(data) {
 
 // User Event Listeners Setup
 function setupEventListeners() {
+  initOrderBookControls();
+
   // Symbol Switcher Tabs
   const symbolTabs = document.getElementById('symbolTabs');
   if (symbolTabs) {
@@ -159,6 +196,9 @@ function setupEventListeners() {
       currentSymbol = btn.dataset.symbol;
       resetTapeStats();
       loadSymbolData(currentSymbol, currentInterval);
+      if (typeof saveLayoutImmediate === 'function') {
+        saveLayoutImmediate();
+      }
     });
   }
 
@@ -174,6 +214,9 @@ function setupEventListeners() {
 
       currentInterval = btn.dataset.interval;
       loadSymbolData(currentSymbol, currentInterval);
+      if (typeof saveLayoutImmediate === 'function') {
+        saveLayoutImmediate();
+      }
     });
   }
 
@@ -184,6 +227,7 @@ function setupEventListeners() {
       showEma20 = !showEma20;
       this.classList.toggle('active', showEma20);
       updateIndicatorsData();
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
   }
 
@@ -193,6 +237,7 @@ function setupEventListeners() {
       showEma50 = !showEma50;
       this.classList.toggle('active', showEma50);
       updateIndicatorsData();
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
   }
 
@@ -202,6 +247,7 @@ function setupEventListeners() {
       showBands = !showBands;
       this.classList.toggle('active', showBands);
       updateIndicatorsData();
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
   }
 
@@ -211,7 +257,21 @@ function setupEventListeners() {
       showRsi = !showRsi;
       this.classList.toggle('active', showRsi);
       if (el.legendRsi) el.legendRsi.style.display = showRsi ? 'inline' : 'none';
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
+  }
+
+  const toggleMacd = document.getElementById('toggleMacd');
+  if (toggleMacd) {
+    toggleMacd.addEventListener('click', function () {
+      setMacdVisibility(!showMacd);
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
+    });
+  }
+
+  // Initialize interactive indicator explanation balloons
+  if (typeof bindIndicatorTooltips === 'function') {
+    bindIndicatorTooltips();
   }
 
   // Side Panel Tabs (Orderbook, Trades, Whales, Metrics, API)
@@ -230,6 +290,9 @@ function setupEventListeners() {
       const targetPane = document.getElementById(paneId);
       if (targetPane) targetPane.classList.add('active');
 
+      if (tab.dataset.tab === 'orderbook') {
+        setMainView('orderbook');
+      }
       if (tab.dataset.tab === 'whales' && rawWhalesData.length === 0) {
         loadWhalesData();
       }
@@ -238,6 +301,9 @@ function setupEventListeners() {
       }
       if (tab.dataset.tab === 'api') {
         updateApiPanel();
+      }
+      if (typeof saveLayoutImmediate === 'function') {
+        saveLayoutImmediate();
       }
     });
   });
@@ -249,12 +315,14 @@ function setupEventListeners() {
       el.subviewOrders.classList.remove('active');
       el.contentWhaleHolders.style.display = 'flex';
       el.contentWhaleOrders.style.display = 'none';
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
     el.subviewOrders.addEventListener('click', () => {
       el.subviewOrders.classList.add('active');
       el.subviewHolders.classList.remove('active');
       el.contentWhaleOrders.style.display = 'flex';
       el.contentWhaleHolders.style.display = 'none';
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
   }
 
@@ -306,11 +374,10 @@ function setupEventListeners() {
     btnExportCSV.addEventListener('click', exportToCSV);
   }
 
-  // View Switcher (Chart vs Expanded Live Tape)
-  if (el.btnViewChart && el.btnViewTape) {
-    el.btnViewChart.addEventListener('click', () => setMainView('chart'));
-    el.btnViewTape.addEventListener('click', () => setMainView('tape'));
-  }
+  // View Switcher (Chart vs Order Book Lado a Lado vs Expanded Live Tape)
+  if (el.btnViewChart) el.btnViewChart.addEventListener('click', () => setMainView('chart'));
+  if (el.btnViewOrderBook) el.btnViewOrderBook.addEventListener('click', () => setMainView('orderbook'));
+  if (el.btnViewTape) el.btnViewTape.addEventListener('click', () => setMainView('tape'));
 
   // Pause / Resume Tape
   if (el.btnPauseTape) {
@@ -331,6 +398,7 @@ function setupEventListeners() {
       btn.classList.add('active');
       tapeState.sizeFilter = btn.dataset.size;
       renderFilteredTapeList();
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
   }
 
@@ -343,6 +411,7 @@ function setupEventListeners() {
       btn.classList.add('active');
       tapeState.sideFilter = btn.dataset.side;
       renderFilteredTapeList();
+      if (typeof saveLayoutImmediate === 'function') saveLayoutImmediate();
     });
   }
 }

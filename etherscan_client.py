@@ -188,12 +188,61 @@ class EtherscanWhaleTracker:
             usd_bal = eth_bal * eth_price_usd
             pct_supply = (eth_bal / ESTIMATED_TOTAL_ETH_SUPPLY) * 100
 
+            # Determinar se é instituição ou contrato/protocolo/pessoa física
+            name = w["name"]
+            cat = w["category"]
+            desc = w["desc"]
+            
+            if "Beacon Deposit" in name:
+                entity_type = "Protocolo PoS (Não é Instituição)"
+                is_institution = False
+                info_details = "NÃO é uma empresa nem instituição privada. É o contrato oficial onde todos os validadores da rede Ethereum mundial travam 32 ETH para participar do consenso Proof-of-Stake (PoS). Guarda mais de 28% de todo o Ethereum existente para segurança coletiva descentralizada."
+            elif "Wrapped Ether" in name or "WETH" in name:
+                entity_type = "Smart Contract DeFi (ERC-20)"
+                is_institution = False
+                info_details = "Contrato inteligente canônico de WETH usado em DEXs (como Uniswap) e protocolos DeFi. Não pertence a uma instituição individual."
+            elif "Vitalik" in name:
+                entity_type = "Pessoa Física (Co-fundador)"
+                is_institution = False
+                info_details = "Carteira pessoal pública de Vitalik Buterin, co-fundador do Ethereum. Movimentações são monitoradas de perto por investidores."
+            elif "Bridge" in name or cat == "Bridge":
+                entity_type = "Ponte de Rollup Layer-2"
+                is_institution = False
+                info_details = f"Contrato de bloqueio (bridge) para segunda camada (L2). Bloqueia ETH na Mainnet para liberar saldo em L2. Descrição: {desc}"
+            elif cat == "Staking" and "Lido" in name:
+                entity_type = "Protocolo Descentralizado (DeFi)"
+                is_institution = False
+                info_details = "Protocolo descentralizado de liquid staking gerenciado por governança Lido DAO."
+            elif cat in ["Exchange"]:
+                entity_type = "Corretora Centralizada (CEX / Custódia)"
+                is_institution = True
+                info_details = f"Instituição financeira / corretora de custódia centralizada. Armazena fundos de clientes e reservas corporativas. {desc}."
+            elif cat in ["Fund", "Institutional"] or "Trading" in name or "Capital" in name or "Cumberland" in name:
+                entity_type = "Fundo / Market Maker Institucional"
+                is_institution = True
+                info_details = f"Empresa ou fundo institucional de trading quantitativo / formador de mercado de grande porte. {desc}."
+            elif cat == "DeFi":
+                entity_type = "Protocolo Descentralizado (Smart Contract)"
+                is_institution = False
+                info_details = f"Protocolo financeiro descentralizado (sem custódia central). {desc}."
+            elif cat == "Foundation":
+                entity_type = "Fundação sem fins lucrativos"
+                is_institution = True
+                info_details = f"Tesouraria oficial de suporte ao desenvolvimento do protocolo. {desc}."
+            else:
+                entity_type = "Grande Investidor / Whale"
+                is_institution = False
+                info_details = f"Endereço on-chain de alta relevância no Ethereum. {desc}."
+
             enriched.append({
                 "address": w["address"],
                 "short_address": f"{w['address'][:6]}...{w['address'][-4:]}",
                 "etherscan_url": f"https://etherscan.io/address/{w['address']}",
                 "name": w["name"],
                 "category": w["category"],
+                "entity_type": entity_type,
+                "is_institution": is_institution,
+                "info_details": info_details,
                 "description": w["desc"],
                 "balance_eth": round(eth_bal, 2),
                 "balance_usd": usd_bal,

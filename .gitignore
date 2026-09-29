@@ -63,6 +63,7 @@ venv.bak/
 !sample_*.csv
 exports/
 data/
+.cache_market/
 
 # IDEs e Editores
 .vscode/

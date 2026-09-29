@@ -29,8 +29,13 @@ function recordWhaleOrder(side, price, qty, time) {
 
     const row = document.createElement('div');
     row.className = `whale-order-row ${side}`;
+
+    const sideBadge = side === 'buy'
+      ? `<span class="whale-side-badge buy"><span class="whale-side-icon">🐋</span> COMPRA</span>`
+      : `<span class="whale-side-badge sell"><span class="whale-side-icon">🐋</span> VENDA</span>`;
+
     row.innerHTML = `
-      <span>${side === 'buy' ? '🟢 COMPRA' : '🔴 VENDA'} @ ${formatPrice(price)}</span>
+      <span>${sideBadge} @ ${formatPrice(price)}</span>
       <span class="font-bold">${qty.toFixed(2)} ${currentSymbol.slice(0, 3)}</span>
       <span>$${formatCompactNumber(totalUSD)} <small style="color:var(--text-muted);font-size:9.5px">${time}</small></span>
     `;
@@ -91,7 +96,7 @@ async function loadWhalesData(force = false) {
   }
 }
 
-// Render Whale Cards List
+// Render Whale Cards List with Informative Balloons on Hover
 function renderWhalesList() {
   if (!el.whalesCardsList) return;
 
@@ -121,20 +126,33 @@ function renderWhalesList() {
     return;
   }
 
-  el.whalesCardsList.innerHTML = filtered.map(w => {
+  el.whalesCardsList.innerHTML = filtered.map((w, index) => {
     const catClass = `cat-${w.category.toLowerCase()}`;
     const rankClass = w.rank === 1 ? 'rank-1' : w.rank === 2 ? 'rank-2' : w.rank === 3 ? 'rank-3' : '';
     const pctSupply = w.percent_supply || 0;
     const barWidth = Math.min(100, Math.max(3, pctSupply * 1.3));
 
+    const isBeacon = w.name.includes('Beacon Deposit') || w.rank === 1;
+    const instTag = w.is_institution
+      ? '<span class="whale-inst-tag inst"><i data-lucide="building-2"></i> Instituição</span>'
+      : isBeacon
+      ? '<span class="whale-inst-tag protocol beacon-pulse"><i data-lucide="shield-check"></i> Protocolo Oficial (Não Instituição)</span>'
+      : '<span class="whale-inst-tag protocol"><i data-lucide="code"></i> Smart Contract / On-Chain</span>';
+
     return `
-      <div class="whale-card ${rankClass}">
+      <div class="whale-card ${rankClass}" data-whale-index="${index}" id="whale-card-${w.rank}">
         <div class="whale-card-header">
           <div class="whale-card-title">
             <span class="whale-rank-badge">#${w.rank}</span>
             <span class="whale-name" title="${w.name}">${w.name}</span>
           </div>
-          <span class="whale-category-badge ${catClass}">${w.category}</span>
+          <div class="whale-header-right">
+            ${instTag}
+            <span class="whale-category-badge ${catClass}">${w.category}</span>
+            <button class="whale-info-trigger" title="Ver informações completas da carteira" data-rank="${w.rank}">
+              <i data-lucide="info"></i>
+            </button>
+          </div>
         </div>
 
         <div class="whale-card-body">
@@ -146,7 +164,7 @@ function renderWhalesList() {
           <div class="whale-supply-bar">
             <div class="whale-supply-fill" style="width: ${barWidth}%"></div>
           </div>
-          <span>${pctSupply.toFixed(2)}% do suprimento</span>
+          <span>${pctSupply.toFixed(2)}% do suprimento global</span>
         </div>
 
         <div class="whale-card-footer">
@@ -165,6 +183,63 @@ function renderWhalesList() {
   if (window.lucide) {
     lucide.createIcons();
   }
+
+  // Attach hover events to cards to display informative balloons
+  const cards = el.whalesCardsList.querySelectorAll('.whale-card');
+  cards.forEach(card => {
+    const idx = parseInt(card.dataset.whaleIndex, 10);
+    const whale = filtered[idx];
+    if (!whale) return;
+
+    const handleHover = (e) => {
+      const isBeacon = whale.name.includes('Beacon Deposit') || whale.rank === 1;
+
+      const instStatusHtml = whale.is_institution
+        ? '<div class="tip-inst-row inst"><span class="badge blue">🏦 Instituição Financeira / CEX</span> Esta carteira pertence a uma empresa, custodiante institucional ou mesa de trading regulada.</div>'
+        : isBeacon
+        ? '<div class="tip-inst-row protocol beacon"><span class="badge green">⚡ PROTOCOLO OFICIAL (NÃO É UMA INSTITUIÇÃO)</span> O <strong>Beacon Deposit Contract</strong> NÃO é uma empresa nem instituição privada! É o contrato inteligente canônico do Ethereum onde todos os validadores da rede mundial travam seus 32 ETH para participar do consenso Proof-of-Stake (PoS).</div>'
+        : '<div class="tip-inst-row protocol"><span class="badge purple">⚡ Não é Instituição Centralizada</span> Contrato inteligente descentralizado, ponte Layer-2 ou carteira individual.</div>';
+
+      const detailsHtml = `
+        ${instStatusHtml}
+        <div class="tip-desc-box">
+          <p>${whale.info_details || whale.description || 'Carteira relevante rastreada na rede Ethereum.'}</p>
+        </div>
+        <div class="tip-stats-grid">
+          <div class="tip-stat-item">
+            <span>Saldo Atual:</span>
+            <strong class="font-mono">${whale.balance_eth.toLocaleString('en-US', { minimumFractionDigits: 2 })} ETH</strong>
+          </div>
+          <div class="tip-stat-item">
+            <span>Valor em USD:</span>
+            <strong class="font-mono">$${formatCompactNumber(whale.balance_usd)}</strong>
+          </div>
+          <div class="tip-stat-item">
+            <span>Suprimento Total:</span>
+            <strong class="font-mono yellow">${whale.percent_supply.toFixed(2)}% de todo ETH do mundo</strong>
+          </div>
+          <div class="tip-stat-item">
+            <span>Tipo:</span>
+            <strong class="font-mono">${whale.entity_type || whale.category}</strong>
+          </div>
+        </div>
+      `;
+
+      showAppTooltip({
+        targetEl: card,
+        event: e,
+        title: `#${whale.rank} ${whale.name}`,
+        subtitle: `Endereço: ${whale.short_address}`,
+        badgeText: whale.category,
+        badgeClass: `cat-${whale.category.toLowerCase()}`,
+        bodyHtml: detailsHtml,
+        footerHtml: '<span class="tooltip-hint">Clique no link para inspecionar transações on-chain no Etherscan</span>',
+      });
+    };
+
+    card.addEventListener('mouseenter', handleHover);
+    card.addEventListener('mouseleave', hideAppTooltip);
+  });
 }
 
 // Copy Whale Address Helper

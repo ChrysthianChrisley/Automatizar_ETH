@@ -233,6 +233,7 @@ body {
   align-items: center;
   gap: 6px;
   transition: var(--transition);
+  text-decoration: none;
 }
 
 .btn:hover {
@@ -244,6 +245,32 @@ body {
 .btn i {
   width: 14px;
   height: 14px;
+}
+
+.btn-analysis-link {
+  background: linear-gradient(135deg, rgba(240, 185, 11, 0.16) 0%, rgba(243, 156, 18, 0.08) 100%);
+  border-color: rgba(240, 185, 11, 0.4);
+  color: #f0b90b;
+  font-weight: 600;
+  box-shadow: 0 0 8px rgba(240, 185, 11, 0.12);
+}
+
+.btn-analysis-link:hover {
+  background: linear-gradient(135deg, rgba(240, 185, 11, 0.28) 0%, rgba(243, 156, 18, 0.2) 100%);
+  border-color: #f0b90b;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(240, 185, 11, 0.35);
+  transform: translateY(-1px);
+}
+
+.view-tab-link {
+  text-decoration: none;
+  color: #f0b90b !important;
+}
+
+.view-tab-link:hover {
+  background: rgba(240, 185, 11, 0.15) !important;
+  color: #ffffff !important;
 }
 
 /* 2. TICKER 24H BAR */
@@ -388,36 +415,112 @@ body {
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  gap: 12px;
+  padding: 0 10px;
+  gap: 10px;
   flex-shrink: 0;
   font-size: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.chart-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* View Switcher Tabs (Chart vs Expanded Tape Reading) */
+.view-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-main);
+  padding: 2px;
+  border-radius: 6px;
+  gap: 2px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.view-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.view-tab-btn:hover {
+  color: #fff;
+  background: var(--bg-hover);
+}
+
+.view-tab-btn.active {
+  background: var(--bg-card-subtle);
+  color: var(--binance-yellow);
+  border-color: rgba(240, 185, 11, 0.3);
+  font-weight: 700;
+}
+
+.view-tab-btn i,
+.view-tab-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.2;
+}
+
+/* Chart Controls Group (Intervals & Indicators) */
+.chart-controls-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .toolbar-group {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .toolbar-label {
   color: var(--text-secondary);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .toolbar-separator {
   width: 1px;
   height: 18px;
   background: var(--border-color);
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 
 .interval-selector {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 2px;
   background: var(--bg-main);
   padding: 2px;
   border-radius: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .interval-btn {
@@ -427,10 +530,13 @@ body {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 8px;
+  padding: 3px 7px;
   border-radius: 4px;
   cursor: pointer;
   transition: var(--transition);
+  white-space: nowrap;
+  line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .interval-btn:hover {
@@ -442,6 +548,7 @@ body {
   background: var(--bg-card-subtle);
   color: var(--binance-yellow);
   font-weight: 700;
+  box-shadow: 0 0 4px rgba(240, 185, 11, 0.2);
 }
 
 .toggle-pill {
@@ -454,6 +561,8 @@ body {
   border-radius: 12px;
   cursor: pointer;
   transition: var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .toggle-pill:hover {
@@ -468,11 +577,13 @@ body {
 }
 
 .chart-legend {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-family: var(--font-mono);
   font-size: 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .legend-item.ema20-legend { color: #f0b90b; }
@@ -521,6 +632,128 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Resizable Pane Splitter (between Candlesticks & Volume) */
+.pane-splitter {
+  height: 24px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  cursor: row-resize;
+  user-select: none;
+  position: relative;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.pane-splitter:hover,
+.pane-splitter.dragging {
+  background: rgba(240, 185, 11, 0.08);
+  border-color: rgba(240, 185, 11, 0.4);
+}
+
+.splitter-handle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  pointer-events: none;
+  transition: all 0.15s ease;
+}
+
+.pane-splitter:hover .splitter-handle,
+.pane-splitter.dragging .splitter-handle {
+  background: var(--binance-yellow);
+  box-shadow: 0 0 6px rgba(240, 185, 11, 0.6);
+  width: 48px;
+}
+
+.splitter-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.splitter-title i,
+.splitter-title svg {
+  width: 13px;
+  height: 13px;
+  color: var(--binance-yellow);
+}
+
+.splitter-live-vol {
+  color: var(--text-main);
+  font-size: 11px;
+  margin-left: 2px;
+}
+
+.splitter-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 6;
+}
+
+.splitter-btn {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.splitter-btn:hover {
+  color: #fff;
+  border-color: var(--border-light);
+  background: var(--bg-hover);
+}
+
+.splitter-btn i,
+.splitter-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* Volume Sub-chart Container */
+.volume-chart-wrapper {
+  background: var(--bg-main);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  height: 120px;
+  min-height: 40px;
+}
+
+body.resizing-chart {
+  cursor: row-resize !important;
+  user-select: none !important;
+}
+
+body.resizing-chart * {
+  user-select: none !important;
 }
 
 /* RSI Sub-chart */
@@ -664,15 +897,55 @@ body {
   justify-content: flex-start;
 }
 
-/* Order Book Whale Radar Banner */
 .ob-whale-radar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 12px;
+  padding: 4px 10px;
   background: rgba(240, 185, 11, 0.06);
   border-bottom: 1px solid var(--border-color);
   font-size: 11px;
+  gap: 8px;
+}
+
+.ob-radar-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ob-tick-pills {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ob-tick-btn {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.ob-tick-btn:hover {
+  color: #fff;
+  border-color: var(--border-light);
+}
+
+.ob-tick-btn.active {
+  background: var(--bg-card-subtle);
+  color: var(--binance-yellow);
+  border-color: var(--binance-yellow);
+  font-weight: 700;
 }
 
 .ob-whale-radar-title {
@@ -770,7 +1043,7 @@ body {
 }
 
 .orderbook-spread {
-  padding: 6px 12px;
+  padding: 5px 10px;
   background: var(--bg-card-subtle);
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
@@ -778,6 +1051,7 @@ body {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  gap: 8px;
 }
 
 .spread-left {
@@ -787,7 +1061,7 @@ body {
 }
 
 .spread-price {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 700;
 }
 
@@ -796,8 +1070,71 @@ body {
 }
 
 .spread-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+.spread-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.spread-control-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.spread-step-select {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  color: var(--binance-yellow);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition);
+}
+
+.spread-step-select:hover,
+.spread-step-select:focus {
+  border-color: var(--binance-yellow);
+  background: var(--bg-card);
+}
+
+.spread-custom-input {
+  width: 55px;
+  background: var(--bg-main);
+  border: 1px solid var(--binance-yellow);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  outline: none;
+  text-align: right;
+  box-shadow: 0 0 6px rgba(240, 185, 11, 0.3);
+}
+
+.spread-value-text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.spread-value-text:hover {
+  color: var(--binance-yellow);
+  text-decoration: underline dotted;
 }
 
 .depth-ratio-bar {
@@ -2049,6 +2386,1595 @@ body {
   color: var(--green);
   border: 1px solid rgba(14, 203, 129, 0.35);
 }
+
+/* ==========================================================================
+   ORDER BOOK LADO A LADO (EXPANDED SIDE-BY-SIDE PRO VIEW)
+   ========================================================================== */
+#orderBookMainView {
+  background: var(--bg-main);
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Sidebar Expand Button */
+.ob-sidebar-actions {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ob-expand-btn {
+  width: 100%;
+  background: rgba(240, 185, 11, 0.1);
+  border: 1px solid rgba(240, 185, 11, 0.35);
+  color: var(--binance-yellow);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.ob-expand-btn:hover {
+  background: rgba(240, 185, 11, 0.2);
+  border-color: var(--binance-yellow);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.ob-expand-btn i,
+.ob-expand-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ==========================================================================
+   BINANCE APP FORMAT ORDER BOOK (LIVRO)
+   ========================================================================== */
+.binance-app-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: stretch;
+  align-items: stretch;
+  background: var(--bg-main);
+  overflow: hidden;
+  padding: 8px 12px;
+  height: 100%;
+  width: 100%;
+}
+
+.binance-app-container {
+  width: 100%;
+  max-width: 100%;
+  background: #181a20;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  height: 100%;
+}
+
+/* 1. Ticker Top Bar */
+.binance-ticker-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 8px 16px;
+  background: #181a20;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.binance-ticker-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.binance-symbol-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.binance-symbol-text {
+  font-size: 16px;
+  font-weight: 800;
+  color: #eaecef;
+  letter-spacing: 0.3px;
+}
+
+.binance-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.binance-price-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.binance-current-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0ecb81;
+}
+
+.binance-price-change {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0ecb81;
+}
+
+.binance-price-change.red {
+  color: #f6465d;
+}
+
+/* Subpills (Livro, Profundidade, Trades) */
+.binance-nav-pills {
+  display: inline-flex;
+  align-items: center;
+  background: #0b0e14;
+  padding: 3px;
+  border-radius: 6px;
+  gap: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.binance-pill {
+  background: transparent;
+  border: none;
+  color: #848e9c;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.binance-pill:hover {
+  color: #fff;
+}
+
+.binance-pill.active {
+  background: #2b313a;
+  color: #eaecef;
+  font-weight: 700;
+}
+
+/* Binance Subview Content Containers */
+.binance-subview-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* 2. Ratio Bar */
+.binance-ratio-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 20px 6px 20px;
+  background: #181a20;
+}
+
+.binance-ratio-num {
+  font-size: 11.5px;
+  font-weight: 700;
+  min-width: 50px;
+}
+
+.binance-ratio-num.green {
+  color: #0ecb81;
+  text-align: left;
+}
+
+.binance-ratio-num.red {
+  color: #f6465d;
+  text-align: right;
+}
+
+.binance-ratio-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  background: #2b313a;
+}
+
+.binance-ratio-fill.green {
+  background: #0ecb81;
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.binance-ratio-divider {
+  width: 2px;
+  background: #181a20;
+  height: 100%;
+}
+
+.binance-ratio-fill.red {
+  background: #f6465d;
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+/* 3. Symmetrical 4-Columns Header */
+.binance-columns-header {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: #1e2329;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11.5px;
+  color: #848e9c;
+  font-weight: 600;
+  user-select: none;
+}
+
+.binance-header-half {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 100%;
+}
+
+.binance-header-half.bid-half-header {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.header-step-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.binance-step-box {
+  position: relative;
+}
+
+.binance-step-select {
+  background: #2b313a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #eaecef;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.binance-step-select:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 4. Order Book Table Body & Rows */
+.binance-ladder-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+}
+
+.binance-ladder-row {
+  display: flex;
+  height: 25px;
+  align-items: center;
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  transition: background-color 0.1s ease;
+  user-select: none;
+}
+
+.binance-ladder-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.binance-cell-half {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  position: relative;
+  padding: 0 20px;
+}
+
+.binance-cell-half.bid-half {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.binance-depth-bg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+  transition: width 0.15s ease;
+}
+
+.binance-depth-bg.bid-bg {
+  right: 0;
+  background: rgba(14, 203, 129, 0.15);
+}
+
+.binance-depth-bg.ask-bg {
+  left: 0;
+  background: rgba(246, 70, 93, 0.15);
+}
+
+.binance-val-qty,
+.binance-val-price {
+  position: relative;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.binance-val-qty {
+  color: #848e9c;
+  font-size: 11.5px;
+  min-width: 75px;
+}
+
+.bid-half .binance-val-qty {
+  text-align: left;
+}
+
+.bid-half .binance-val-price {
+  text-align: right;
+}
+
+.ask-half .binance-val-price {
+  text-align: left;
+}
+
+.ask-half .binance-val-qty {
+  text-align: right;
+}
+
+.binance-val-price.bid-price {
+  color: #0ecb81;
+  font-weight: 700;
+  min-width: 80px;
+}
+
+.binance-val-price.ask-price {
+  color: #f6465d;
+  font-weight: 700;
+  min-width: 80px;
+}
+
+.whale-arrow {
+  color: #f0b90b;
+  font-size: 9px;
+  margin-right: 4px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* 5. Subtab 2: Depth Chart (Profundidade) */
+.binance-depth-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 16px;
+  background: #181a20;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.depth-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.depth-stat-label {
+  color: #848e9c;
+}
+
+.depth-stat-val {
+  font-weight: 700;
+  color: #eaecef;
+}
+
+.depth-stat-val.green {
+  color: #0ecb81;
+}
+
+.depth-stat-val.red {
+  color: #f6465d;
+}
+
+.binance-depth-canvas-wrapper {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  min-height: 380px;
+  overflow: hidden;
+  background: #121418;
+}
+
+#binanceDepthCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.binance-depth-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(24, 26, 32, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: #eaecef;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  transform: translate(-50%, -110%);
+  white-space: nowrap;
+}
+
+/* 6. Subtab 3: Live Trades Table */
+.binance-trades-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  background: #181a20;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.trades-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #848e9c;
+}
+
+.trades-stat-pill strong {
+  font-weight: 700;
+}
+
+.trades-stat-pill strong.gold {
+  color: #f0b90b;
+}
+
+.binance-trades-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #1e2329;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11.5px;
+  color: #848e9c;
+  font-weight: 600;
+  user-select: none;
+}
+
+.trades-th {
+  flex: 1;
+}
+.trades-th.col-time { flex: 0.8; }
+.trades-th.col-price { flex: 1; text-align: right; }
+.trades-th.col-qty { flex: 1; text-align: right; }
+.trades-th.col-total { flex: 1.1; text-align: right; }
+.trades-th.col-side { flex: 0.8; text-align: center; }
+
+.binance-trades-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.binance-trade-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.15s ease;
+}
+
+.binance-trade-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.t-col {
+  flex: 1;
+}
+.t-col.col-time { flex: 0.8; color: #848e9c; font-size: 11px; }
+.t-col.col-price { flex: 1; text-align: right; font-weight: 700; }
+.t-col.col-price.buy { color: #0ecb81; }
+.t-col.col-price.sell { color: #f6465d; }
+.t-col.col-qty { flex: 1; text-align: right; color: #eaecef; }
+.t-col.col-total { flex: 1.1; text-align: right; color: #848e9c; }
+.t-col.col-side { flex: 0.8; text-align: center; }
+
+.trade-side-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.trade-side-pill.buy {
+  background: rgba(14, 203, 129, 0.15);
+  color: #0ecb81;
+}
+
+.trade-side-pill.sell {
+  background: rgba(246, 70, 93, 0.15);
+  color: #f6465d;
+}
+
+/* ==========================================================================
+   HIGH-CONTRAST WHALE BADGES & BUY VISIBILITY ENHANCEMENTS
+   ========================================================================== */
+
+/* Fix: Buy whale icon/badge was hard to read in faint green.
+   Now rendered in ultra-sharp, high-contrast Binance Golden Amber! */
+.whale-side-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.whale-side-badge.buy {
+  background: #f0b90b !important;
+  color: #0b0e14 !important;
+  border: 1px solid #ffd700;
+  box-shadow: 0 0 8px rgba(240, 185, 11, 0.5);
+}
+
+.whale-side-badge.buy .whale-side-icon {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
+}
+
+.whale-side-badge.sell {
+  background: rgba(246, 70, 93, 0.2) !important;
+  color: #f6465d !important;
+  border: 1px solid rgba(246, 70, 93, 0.5);
+  box-shadow: 0 0 6px rgba(246, 70, 93, 0.3);
+}
+
+.whale-order-row.buy {
+  background: rgba(240, 185, 11, 0.05) !important;
+  border-left: 3px solid #f0b90b !important;
+}
+
+.whale-order-row.buy span:first-child {
+  color: #fff !important;
+}
+
+/* High contrast Order Book sidebar badges */
+.ob-whale-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.ob-whale-badge.bid {
+  background: #f0b90b !important;
+  color: #0b0e14 !important;
+  border: 1px solid #ffd700;
+  box-shadow: 0 0 6px rgba(240, 185, 11, 0.6);
+}
+
+.ob-whale-badge.ask {
+  background: rgba(246, 70, 93, 0.2) !important;
+  color: #f6465d !important;
+  border: 1px solid rgba(246, 70, 93, 0.4);
+}
+
+/* Dedicated Binance Ladder Whale Badge Pill */
+.whale-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  margin-right: 6px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.whale-badge-pill:hover {
+  transform: scale(1.05);
+}
+
+.whale-badge-pill.bid {
+  background: #f0b90b;
+  color: #0b0e14;
+  border: 1px solid #ffd700;
+  box-shadow: 0 0 8px rgba(240, 185, 11, 0.5);
+}
+
+.whale-badge-pill.ask {
+  background: rgba(246, 70, 93, 0.22);
+  color: #f6465d;
+  border: 1px solid rgba(246, 70, 93, 0.5);
+  box-shadow: 0 0 6px rgba(246, 70, 93, 0.3);
+}
+
+.binance-ladder-row.has-bid-whale {
+  background: rgba(240, 185, 11, 0.06);
+  border-left: 2px solid #f0b90b;
+}
+
+.binance-ladder-row.has-ask-whale {
+  background: rgba(246, 70, 93, 0.06);
+  border-right: 2px solid #f6465d;
+}
+
+/* ==========================================================================
+   BINANCE VIEW WHALE RADAR BANNER
+   ========================================================================== */
+.binance-whale-radar-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px;
+  background: linear-gradient(90deg, #181c24 0%, #1c2230 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.whale-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.whale-radar-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f0b90b;
+  box-shadow: 0 0 8px #f0b90b;
+  animation: radarBlink 1.6s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes radarBlink {
+  0% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 4px #f0b90b; }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #f0b90b; }
+  100% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 4px #f0b90b; }
+}
+
+.whale-banner-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.whale-icon-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f0b90b;
+  letter-spacing: 0.3px;
+}
+
+.whale-banner-subtitle {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.whale-banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.whale-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.whale-stat-item.bid strong {
+  color: #0ecb81;
+}
+
+.whale-stat-item.ask strong {
+  color: #f6465d;
+}
+
+.stat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.stat-dot.green { background: #0ecb81; box-shadow: 0 0 5px #0ecb81; }
+.stat-dot.red { background: #f6465d; box-shadow: 0 0 5px #f6465d; }
+
+.whale-info-btn-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(240, 185, 11, 0.12);
+  border: 1px solid rgba(240, 185, 11, 0.3);
+  color: #f0b90b;
+  padding: 4px 9px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.whale-info-btn-inline:hover {
+  background: rgba(240, 185, 11, 0.25);
+  color: #fff;
+  border-color: #f0b90b;
+}
+
+.whale-info-btn-inline i,
+.whale-info-btn-inline svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ==========================================================================
+   MACD SUB-CHART WRAPPER & METRICS
+   ========================================================================== */
+.macd-chart-wrapper {
+  background: #0b0e14;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 12px;
+  flex-shrink: 0;
+}
+
+.macd-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.macd-header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #eaecef;
+}
+
+.macd-header-vals {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.val-macd {
+  color: #2962ff;
+}
+
+.val-signal {
+  color: #ff6d00;
+}
+
+.val-hist {
+  color: #0ecb81;
+}
+
+.legend-item.macd-legend {
+  color: #2962ff;
+}
+
+/* Metric Colors */
+.font-mono.blue {
+  color: #2962ff;
+}
+
+.font-mono.orange {
+  color: #ff6d00;
+}
+
+/* ==========================================================================
+   UNIVERSAL FLOATING TOOLTIP & EXPLANATION BALLOONS
+   ========================================================================== */
+.app-floating-tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999999;
+  background: rgba(18, 23, 34, 0.97);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 12px 14px;
+  width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 16px rgba(240, 185, 11, 0.12);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  animation: tooltipFadeIn 0.18s ease-out;
+  transition: opacity 0.12s ease;
+}
+
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.app-tooltip-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
+
+.app-tooltip-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-tooltip-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.app-tooltip-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.app-tooltip-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eaecef;
+}
+
+.app-tooltip-badge.yellow { background: rgba(240, 185, 11, 0.2); color: #f0b90b; border: 1px solid rgba(240, 185, 11, 0.4); }
+.app-tooltip-badge.cyan { background: rgba(0, 210, 255, 0.15); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.3); }
+.app-tooltip-badge.purple { background: rgba(153, 69, 255, 0.2); color: #9945ff; border: 1px solid rgba(153, 69, 255, 0.4); }
+.app-tooltip-badge.blue { background: rgba(41, 98, 255, 0.2); color: #60a5fa; border: 1px solid rgba(41, 98, 255, 0.4); }
+.app-tooltip-badge.green { background: rgba(14, 203, 129, 0.2); color: #0ecb81; border: 1px solid rgba(14, 203, 129, 0.4); }
+
+.app-tooltip-body {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tooltip-summary {
+  font-weight: 500;
+  color: #eaecef;
+}
+
+.tooltip-formula {
+  background: rgba(0, 0, 0, 0.35);
+  border-left: 2px solid var(--binance-yellow);
+  padding: 4px 8px;
+  border-radius: 0 4px 4px 0;
+  font-size: 10px;
+}
+
+.tooltip-formula code {
+  color: #f0b90b;
+  font-family: var(--font-mono);
+}
+
+.tooltip-interp {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+.app-tooltip-footer {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Tooltip content specifically for Whale Cards */
+.tip-inst-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.tip-inst-row.inst {
+  background: rgba(56, 97, 251, 0.1);
+  border-left: 3px solid #3861fb;
+}
+
+.tip-inst-row.protocol {
+  background: rgba(14, 203, 129, 0.1);
+  border-left: 3px solid #0ecb81;
+}
+
+.tip-inst-row.protocol.beacon {
+  background: linear-gradient(135deg, rgba(14, 203, 129, 0.15) 0%, rgba(240, 185, 11, 0.15) 100%);
+  border-left: 3px solid #f0b90b;
+}
+
+.tip-desc-box {
+  font-size: 11px;
+  color: #eaecef;
+  line-height: 1.4;
+}
+
+.tip-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tip-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tip-stat-item span {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.tip-stat-item strong {
+  font-size: 11px;
+}
+
+/* Whale Card Header Enhancements in Top 50 Tab */
+.whale-header-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.whale-inst-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.whale-inst-tag i,
+.whale-inst-tag svg {
+  width: 10px;
+  height: 10px;
+}
+
+.whale-inst-tag.inst {
+  background: rgba(56, 97, 251, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.whale-inst-tag.protocol {
+  background: rgba(14, 203, 129, 0.15);
+  color: #0ecb81;
+  border: 1px solid rgba(14, 203, 129, 0.3);
+}
+
+.whale-inst-tag.beacon-pulse {
+  background: rgba(240, 185, 11, 0.15);
+  color: #f0b90b;
+  border: 1px solid #f0b90b;
+  animation: beaconGlow 2s infinite ease-in-out;
+}
+
+@keyframes beaconGlow {
+  0% { box-shadow: 0 0 4px rgba(240, 185, 11, 0.3); }
+  50% { box-shadow: 0 0 10px rgba(240, 185, 11, 0.7); }
+  100% { box-shadow: 0 0 4px rgba(240, 185, 11, 0.3); }
+}
+
+.whale-info-trigger {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.whale-info-trigger:hover {
+  color: var(--binance-yellow);
+  background: var(--bg-hover);
+}
+
+.whale-info-trigger i,
+.whale-info-trigger svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ==========================================
+   LAYOUT PERSISTENCE & MARKINGS MODAL STYLES
+   ========================================== */
+
+/* 1. Header Layout Status Badge */
+.layout-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  cursor: default;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.layout-status-badge i,
+.layout-status-badge svg {
+  width: 13px;
+  height: 13px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.layout-status-badge.status-saving {
+  background: rgba(240, 185, 11, 0.12);
+  border-color: rgba(240, 185, 11, 0.35);
+  color: #f0b90b;
+}
+
+.layout-status-badge.status-saving i,
+.layout-status-badge.status-saving svg {
+  color: #f0b90b;
+  animation: spin 1s linear infinite;
+}
+
+.layout-status-badge.status-saved {
+  background: rgba(14, 203, 129, 0.12);
+  border-color: rgba(14, 203, 129, 0.4);
+  color: #0ecb81;
+  box-shadow: 0 0 10px rgba(14, 203, 129, 0.2);
+}
+
+.layout-status-badge.status-saved i,
+.layout-status-badge.status-saved svg {
+  color: #0ecb81;
+}
+
+.layout-status-badge.status-error {
+  background: rgba(246, 70, 93, 0.12);
+  border-color: rgba(246, 70, 93, 0.4);
+  color: #f6465d;
+}
+
+/* 2. Chart Toolbar Markings Buttons */
+.btn-mark-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-mark-tool i,
+.btn-mark-tool svg {
+  width: 13px;
+  height: 13px;
+  color: var(--binance-yellow);
+}
+
+.btn-mark-tool:hover {
+  background: var(--bg-hover);
+  border-color: var(--binance-yellow);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.markings-counter-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: var(--binance-yellow);
+  color: #000;
+  line-height: 1.2;
+}
+
+/* 3. Modal Backdrop & Dialog */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 12, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-dialog.markings-modal {
+  background: #121722;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(240, 185, 11, 0.08);
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: #171d2c;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.modal-title i,
+.modal-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--binance-yellow);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modal-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal-body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 4. Markings Form Card */
+.markings-add-card {
+  background: #0b0e14;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+
+.markings-add-card h5 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.markings-form-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.3fr auto auto;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-field label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.input-with-action {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.input-with-action input,
+.form-field input[type="text"] {
+  background: #171d2c;
+  border: 1px solid var(--border-color);
+  color: #fff;
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  width: 100%;
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input-with-action input {
+  padding-right: 68px;
+}
+
+.input-with-action input:focus,
+.form-field input[type="text"]:focus {
+  border-color: var(--binance-yellow);
+}
+
+.btn-live-fill {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  background: rgba(240, 185, 11, 0.15);
+  border: 1px solid rgba(240, 185, 11, 0.3);
+  color: var(--binance-yellow);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-live-fill:hover {
+  background: rgba(240, 185, 11, 0.3);
+}
+
+.color-picker-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.color-preset-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.color-preset-btn:hover {
+  transform: scale(1.15);
+}
+
+.color-preset-btn.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 6px currentColor;
+  transform: scale(1.18);
+}
+
+.btn-add-marking {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0b90b;
+  color: #0b0e14;
+  border: none;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.btn-add-marking i,
+.btn-add-marking svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-add-marking:hover {
+  background: #f8c325;
+  transform: translateY(-1px);
+}
+
+/* 5. Markings List Section */
+.markings-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.markings-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.btn-clear-markings {
+  background: transparent;
+  border: 1px solid rgba(246, 70, 93, 0.3);
+  color: #f6465d;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-clear-markings:hover {
+  background: rgba(246, 70, 93, 0.15);
+  border-color: #f6465d;
+}
+
+.markings-table-container {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: #0b0e14;
+}
+
+.markings-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.marking-row-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.12s ease;
+}
+
+.marking-row-item:last-child {
+  border-bottom: none;
+}
+
+.marking-row-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.marking-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px currentColor;
+}
+
+.marking-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 10px;
+}
+
+.marking-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.marking-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.marking-btn-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.marking-btn-delete i,
+.marking-btn-delete svg {
+  width: 14px;
+  height: 14px;
+}
+
+.marking-btn-delete:hover {
+  color: #f6465d;
+  background: rgba(246, 70, 93, 0.15);
+}
+
+.markings-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+  color: var(--text-muted);
+  text-align: center;
+  gap: 6px;
+}
+
+.markings-empty-state i,
+.markings-empty-state svg {
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.markings-empty-state span {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.markings-empty-state small {
+  font-size: 11px;
+}
+
+.modal-footer-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(240, 185, 11, 0.05);
+  border: 1px dashed rgba(240, 185, 11, 0.2);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.modal-footer-note i,
+.modal-footer-note svg {
+  width: 14px;
+  height: 14px;
+  color: var(--binance-yellow);
+  flex-shrink: 0;
+}
+
+.modal-footer-note code {
+  color: var(--binance-yellow);
+  background: rgba(240, 185, 11, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+
 
 
 

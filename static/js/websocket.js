@@ -78,13 +78,27 @@ function handleRealtimeKline(k) {
     });
   }
 
-  // Update Volume series
-  if (volumeSeries) {
+  // Update Volume series (Separate or Overlay)
+  const volColor = close >= open ? 'rgba(14, 203, 129, 0.65)' : 'rgba(246, 70, 93, 0.65)';
+  if (separateVolumeSeries && isVolumeSeparated) {
+    separateVolumeSeries.update({
+      time: candleTime,
+      value: volume,
+      color: volColor,
+    });
+  } else if (volumeSeries) {
     volumeSeries.update({
       time: candleTime,
       value: volume,
-      color: close >= open ? 'rgba(14, 203, 129, 0.4)' : 'rgba(246, 70, 93, 0.4)',
+      color: volColor,
     });
+  }
+
+  // Update Splitter Volume Live Display
+  const liveVolEl = el.splitterLiveVol || document.getElementById('splitterLiveVol');
+  if (liveVolEl) {
+    const symbolLabel = currentSymbol.replace('USDT', '');
+    liveVolEl.textContent = `${volume.toFixed(2)} ${symbolLabel} ($${formatCompactNumber(volume * close)})`;
   }
 
   // Update Live Price Flash
@@ -115,13 +129,23 @@ function handleRealtimeTrade(trade) {
                        (currentSymbol.startsWith('BTC') && qty >= 0.5) ||
                        (qty * price >= 25000.0);
 
-  // If Whale Trade, record in Whale Radar Feed
+  // If Whale Trade, record in Whale Radar Feed & plot marker on chart
   if (isWhaleTrade) {
     recordWhaleOrder(tradeType, price, qty, time);
+    if (typeof addWhaleMarkerToChart === 'function') {
+      const isMega = (qty * price >= 90000.0) || (currentSymbol.startsWith('ETH') && qty >= 40.0);
+      const timeSec = Math.floor((trade.T || Date.now()) / 1000);
+      addWhaleMarkerToChart(timeSec, price, qty, tradeType === 'buy', isMega);
+    }
   }
 
   // Process Expanded Tape Reading Pro Feed
   processTapeReadingTrade(trade);
+
+  // Feed Binance Dedicated Live Trades subview
+  if (typeof addBinanceLiveTrade === 'function') {
+    addBinanceLiveTrade(trade);
+  }
 
   // Filter if user toggled "Only Whales" in small sidebar
   if (el.toggleWhalesOnly && el.toggleWhalesOnly.checked && !isWhaleTrade) {

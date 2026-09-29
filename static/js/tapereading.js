@@ -22,43 +22,62 @@ const tapeState = {
   maxDomRows: 150,
 };
 
-// Switch between Chart and Expanded Tape Reading View
+// Switch between Chart, Order Book Lado a Lado, and Expanded Tape Reading View
 function setMainView(view) {
   tapeState.activeView = view;
-  if (view === 'chart') {
-    if (el.btnViewChart) el.btnViewChart.classList.add('active');
-    if (el.btnViewTape) el.btnViewTape.classList.remove('active');
-    if (el.chartMainView) {
-      el.chartMainView.style.display = 'flex';
-      el.chartMainView.classList.add('active');
-    }
-    if (el.tapeReadingMainView) {
-      el.tapeReadingMainView.style.display = 'none';
-      el.tapeReadingMainView.classList.remove('active');
-    }
-    if (el.chartControlsGroup) el.chartControlsGroup.style.display = 'flex';
-    if (el.chartLegend) el.chartLegend.style.display = 'flex';
 
-    // Resize TradingView chart if dimensions changed
+  // 1. Update Tab Buttons
+  if (el.btnViewChart) el.btnViewChart.classList.toggle('active', view === 'chart');
+  if (el.btnViewOrderBook) el.btnViewOrderBook.classList.toggle('active', view === 'orderbook');
+  if (el.btnViewTape) el.btnViewTape.classList.toggle('active', view === 'tape');
+
+  // 2. Toggle Subviews
+  if (el.chartMainView) {
+    el.chartMainView.style.display = view === 'chart' ? 'flex' : 'none';
+    el.chartMainView.classList.toggle('active', view === 'chart');
+  }
+  if (el.orderBookMainView) {
+    el.orderBookMainView.style.display = view === 'orderbook' ? 'flex' : 'none';
+    el.orderBookMainView.classList.toggle('active', view === 'orderbook');
+  }
+  if (el.tapeReadingMainView) {
+    el.tapeReadingMainView.style.display = view === 'tape' ? 'flex' : 'none';
+    el.tapeReadingMainView.classList.toggle('active', view === 'tape');
+  }
+
+  // 3. Toolbar Controls (Indicators and Intervals only relevant in Chart view)
+  if (el.chartControlsGroup) {
+    el.chartControlsGroup.style.display = view === 'chart' ? 'inline-flex' : 'none';
+  }
+  if (el.chartLegend) {
+    el.chartLegend.style.display = view === 'chart' ? 'inline-flex' : 'none';
+  }
+
+  // 4. View-specific hooks
+  if (view === 'chart') {
     if (tvChart && el.tvChartContainer) {
       tvChart.applyOptions({
         width: el.tvChartContainer.clientWidth,
         height: el.tvChartContainer.clientHeight,
       });
     }
-  } else {
-    if (el.btnViewTape) el.btnViewTape.classList.add('active');
-    if (el.btnViewChart) el.btnViewChart.classList.remove('active');
-    if (el.chartMainView) {
-      el.chartMainView.style.display = 'none';
-      el.chartMainView.classList.remove('active');
+  } else if (view === 'orderbook') {
+    if (lastRawDepth) {
+      renderOrderBook(lastRawDepth);
     }
-    if (el.tapeReadingMainView) {
-      el.tapeReadingMainView.style.display = 'flex';
-      el.tapeReadingMainView.classList.add('active');
+    if (binanceActiveSubtab === 'depth' && typeof drawBinanceDepthChart === 'function') {
+      setTimeout(() => drawBinanceDepthChart(), 50);
+    } else if (binanceActiveSubtab === 'trades' && typeof renderBinanceTradesTab === 'function') {
+      renderBinanceTradesTab();
     }
-    if (el.chartControlsGroup) el.chartControlsGroup.style.display = 'none';
-    if (el.chartLegend) el.chartLegend.style.display = 'none';
+  }
+
+  if (window.lucide) {
+    try { lucide.createIcons(); } catch (e) {}
+  }
+
+  if (typeof saveLayoutDebounced === 'function') {
+    saveLayoutDebounced();
   }
 }
 
