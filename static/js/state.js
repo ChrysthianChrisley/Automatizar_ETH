@@ -40,8 +40,8 @@ let signalLineSeries = null;
 let macdHistogramSeries = null;
 
 // Indicator Visibility Toggles
-let showEma20 = true;
-let showEma50 = true;
+let showEma20 = false;
+let showEma50 = false;
 let showRsi = false;
 let showBands = false;
 let showMacd = false;

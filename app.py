@@ -497,8 +497,8 @@ def get_default_layout_settings():
             "binanceActiveSubtab": "livro"
         },
         "indicators": {
-            "showEma20": True,
-            "showEma50": True,
+            "showEma20": False,
+            "showEma50": False,
             "showRsi": False,
             "showBands": False,
             "showMacd": False

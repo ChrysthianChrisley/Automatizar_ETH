@@ -269,8 +269,8 @@ function applySettingsObject(settings) {
 
   // 3. Indicators State
   if (settings.indicators) {
-    showEma20 = settings.indicators.showEma20 !== undefined ? Boolean(settings.indicators.showEma20) : true;
-    showEma50 = settings.indicators.showEma50 !== undefined ? Boolean(settings.indicators.showEma50) : true;
+    showEma20 = settings.indicators.showEma20 !== undefined ? Boolean(settings.indicators.showEma20) : false;
+    showEma50 = settings.indicators.showEma50 !== undefined ? Boolean(settings.indicators.showEma50) : false;
     showRsi = settings.indicators.showRsi !== undefined ? Boolean(settings.indicators.showRsi) : false;
     showBands = settings.indicators.showBands !== undefined ? Boolean(settings.indicators.showBands) : false;
     showMacd = settings.indicators.showMacd !== undefined ? Boolean(settings.indicators.showMacd) : false;
@@ -293,6 +293,10 @@ function applySettingsObject(settings) {
 
     if (showMacd && typeof setMacdVisibility === 'function') {
       setMacdVisibility(true);
+    }
+
+    if (typeof updateIndicatorsData === 'function') {
+      updateIndicatorsData();
     }
   }
 
